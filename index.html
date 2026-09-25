@@ -1,0 +1,512 @@
+<title>Sommersemester Finder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+
+:root{
+  color-scheme: light;
+  --bg:#eef2f4; --panel:#ffffff; --panel2:#f5f8f9;
+  --ink:#10202b; --mut:#55697a; --line:#d5dee3;
+  --acc:#0f5fca; --acc-tint:#e5eefc;
+  --g:#0d7a43; --g-bg:#e2f3e9; --a:#a06007; --a-bg:#fbecd9; --r:#b23027; --r-bg:#fae4e2;
+  --shadow:0 1px 2px rgba(16,32,43,.06),0 4px 14px rgba(16,32,43,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0d1319; --panel:#151f28; --panel2:#1a2733;
+    --ink:#e7eef3; --mut:#93a8b7; --line:#28394a;
+    --acc:#5b9bff; --acc-tint:#12233b;
+    --g:#42c07e; --g-bg:#0f2e21; --a:#e2a54a; --a-bg:#33240e; --r:#ef7b72; --r-bg:#391713;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0d1319; --panel:#151f28; --panel2:#1a2733;
+  --ink:#e7eef3; --mut:#93a8b7; --line:#28394a;
+  --acc:#5b9bff; --acc-tint:#12233b;
+  --g:#42c07e; --g-bg:#0f2e21; --a:#e2a54a; --a-bg:#33240e; --r:#ef7b72; --r-bg:#391713;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{
+  font-family:Archivo,ui-sans-serif,system-ui,sans-serif;
+  background:var(--bg); color:var(--ink);
+  font-size:14.5px; line-height:1.5;
+  padding-inline:18px;
+}
+.mono{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  margin-inline:-18px;padding-block:14px;padding-inline:18px;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+}
+.hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:1060px;margin-inline:auto}
+.logo{
+  width:38px;height:38px;flex:0 0 auto;border-radius:9px;
+  background:var(--acc);color:#fff;display:grid;place-items:center;
+  font-weight:800;font-size:13px;letter-spacing:.02em;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo{color:#0d1319}}
+:root[data-theme="dark"] .logo{color:#0d1319}
+.hd h1{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.hd .sub{font-size:12.5px;color:var(--mut);max-width:46ch}
+.hd .stats{margin-left:auto;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);line-height:1.7}
+.hd .stats b{color:var(--ink);font-weight:600}
+.hd .stats .live{color:var(--g);font-weight:600}
+
+/* ---------- controls ---------- */
+main{max-width:1060px;margin-inline:auto;padding-block:20px 60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+#controls{padding:18px 20px 14px;margin-bottom:16px}
+.crow{display:flex;flex-wrap:wrap;gap:18px 26px;align-items:flex-end}
+.grp{display:flex;flex-direction:column;gap:7px}
+.grp>span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip-btn{
+  border:1px solid var(--line);border-radius:999px;padding:5px 12px;
+  font-size:13px;font-weight:600;color:var(--mut);background:var(--panel2);
+  transition:border-color .15s,background .15s,color .15s;
+}
+.chip-btn[aria-pressed="true"]{background:var(--acc-tint);border-color:var(--acc);color:var(--acc)}
+select{
+  appearance:none;border:1px solid var(--line);border-radius:8px;background:var(--panel2);
+  color:var(--ink);padding:6px 28px 6px 10px;font:600 13px 'IBM Plex Mono',monospace;
+  background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);
+  background-position:calc(100% - 14px) 55%,calc(100% - 9px) 55%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+}
+input[type="search"]{
+  border:1px solid var(--line);border-radius:8px;background:var(--panel2);
+  padding:6px 10px;font-size:13.5px;color:var(--ink);width:170px;
+}
+.switchrow{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.sw{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--mut)}
+.sw i{
+  width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;transition:background .18s;flex:0 0 auto;
+}
+.sw i::after{content:"";position:absolute;top:2.5px;left:2.5px;width:15px;height:15px;border-radius:50%;background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .18s}
+.sw[aria-pressed="true"]{color:var(--ink)}
+.sw[aria-pressed="true"] i{background:var(--acc)}
+.sw[aria-pressed="true"] i::after{left:16px}
+.hint{margin-top:10px;font-size:12px;color:var(--mut)}
+.hint b{color:var(--ink)}
+
+/* ---------- results meta ---------- */
+#meta{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 2px 12px;font-size:13px;color:var(--mut)}
+#meta .cnt{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--ink)}
+
+/* ---------- programme rows ---------- */
+#list{display:flex;flex-direction:column;gap:10px}
+.prog{position:relative;overflow:hidden}
+.prog .stripe{position:absolute;inset:0 auto 0 0;width:4px}
+.prog.vg .stripe{background:var(--g)} .prog.va .stripe{background:var(--a)} .prog.vr .stripe{background:var(--r)}
+.row{display:flex;gap:14px;padding:15px 18px 13px 22px;align-items:flex-start}
+.main{flex:1;min-width:0}
+.uni{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.progt{font-size:16.5px;font-weight:700;letter-spacing:-.01em;margin:2px 0 1px}
+.progt .deg{font-weight:600;color:var(--mut);font-size:13.5px}
+.loc{font-size:12.5px;color:var(--mut);margin-bottom:9px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+  border:1px solid var(--line);border-radius:6px;padding:2.5px 8px;color:var(--mut);background:var(--panel2);white-space:nowrap;
+}
+.tag.ok{border-color:color-mix(in srgb,var(--g) 45%,var(--line));color:var(--g)}
+.tag.no{border-color:color-mix(in srgb,var(--r) 45%,var(--line));color:var(--r)}
+.tag.warn{border-color:color-mix(in srgb,var(--a) 55%,var(--line));color:var(--a)}
+.tag.acc{border-color:var(--acc);color:var(--acc)}
+.aside{flex:0 0 208px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.vpill{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:6px;
+}
+.vg .vpill{background:var(--g-bg);color:var(--g)} .va .vpill{background:var(--a-bg);color:var(--a)} .vr .vpill{background:var(--r-bg);color:var(--r)}
+.fails{font-size:11.5px;color:var(--r);font-weight:600;text-align:right;line-height:1.45}
+.dl{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);line-height:1.6;text-align:right}
+.dl .win{color:var(--ink);font-weight:600}
+.dl .st{display:inline-block;font-weight:600}
+.dl .open{color:var(--g)} .dl .soon{color:var(--r)} .dl .up{color:var(--a)} .dl .closed{color:var(--mut)}
+.prog .row{flex-wrap:wrap}
+details.det-wrap{
+  flex:1 1 100%;border-top:1px solid var(--line);margin-top:14px;padding-top:2px;
+}
+details.det-wrap summary{
+  list-style:none;display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;color:var(--acc);padding:8px 0 0;cursor:pointer;
+}
+details.det-wrap summary::-webkit-details-marker{display:none}
+details.det-wrap summary::after{content:"＋";font-family:'IBM Plex Mono',monospace;font-size:11px}
+details.det-wrap[open] summary::after{content:"－"}
+.detgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;padding:12px 0 4px}
+.det h4{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:4px}
+.det p,.det li{font-size:13px;color:var(--ink)}
+.det ul{padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.det .q{font-style:italic;color:var(--mut)}
+/* ---------- tabs, shortlist, notes ---------- */
+.tabs{display:flex;gap:8px;margin:0 2px 12px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--mut);background:var(--panel);box-shadow:var(--shadow)}
+.tab[aria-selected="true"]{background:var(--acc-tint);border-color:var(--acc);color:var(--acc)}
+.tab b{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;background:var(--acc);color:var(--bg);border-radius:5px;padding:1.5px 6px;margin-left:5px}
+.tick{border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);background:var(--panel2);transition:border-color .15s,color .15s,background .15s}
+.tick.on{border-color:var(--acc);color:var(--acc);background:var(--acc-tint)}
+.notewrap{grid-column:1/-1}
+textarea.note{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);font:13px/1.55 Archivo,ui-sans-serif,system-ui,sans-serif;padding:9px 11px;resize:vertical;min-height:66px}
+textarea.note:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
+.empty{padding:26px 20px;text-align:center;color:var(--mut)}
+
+@media (max-width:760px){
+  .row{padding-right:16px}
+  .aside{flex:1 1 100%;flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px;text-align:left;justify-content:space-between}
+  .detgrid{grid-template-columns:1fr}
+  .hd .stats{margin-left:0;text-align:left;width:100%}
+  input[type="search"]{width:100%}
+}
+
+/* ---------- footer ---------- */
+footer{max-width:1060px;margin:30px auto 0;border-top:1px solid var(--line);padding:18px 2px 40px;font-size:12px;color:var(--mut);line-height:1.7}
+footer b{color:var(--ink)}
+@media (prefers-reduced-motion: no-preference){
+  .prog{animation:rise .35s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style>
+
+<header>
+  <div class="hd">
+    <div class="logo">SS</div>
+    <div>
+      <h1>Sommersemester Finder</h1>
+      <div class="sub">English-taught CS / AI / DS master's in Germany — filtered to programmes you can start in the summer semester.</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="controls" aria-label="Your profile and filters">
+    <div class="crow">
+      <div class="grp"><span>English route</span>
+        <div class="chips">
+          <button class="chip-btn" id="moiBtn" aria-pressed="true">I have an MOI certificate</button>
+        </div>
+      </div>
+      <div class="grp"><span>IELTS overall</span>
+        <select id="ielts"></select>
+      </div>
+      <div class="grp"><span>IELTS Reading</span>
+        <select id="reading"></select>
+      </div>
+      <div class="grp"><span>Your German grade</span>
+        <select id="grade"></select>
+      </div>
+      <div class="grp"><span>Search</span>
+        <input type="search" id="q" placeholder="university or programme…">
+      </div>
+    </div>
+    <div class="switchrow">
+      <button class="sw" id="noGerman" aria-pressed="true"><i></i>I have no German</button>
+      <button class="sw" id="noGRE" aria-pressed="true"><i></i>No GRE taken</button>
+      <button class="sw" id="summerOnly" aria-pressed="true"><i></i>Summer start only</button>
+      <div class="sw" style="gap:10px"><i hidden></i><span style="font-weight:600">Max tuition/sem</span>
+        <select id="feeCap">
+          <option value="0">€0</option>
+          <option value="200">€200</option>
+          <option value="800">€800</option>
+          <option value="1500">€1,500</option>
+          <option value="99999" selected>Any</option>
+        </select>
+      </div>
+      <div class="sw" style="gap:10px"><span style="font-weight:600">Region</span>
+        <select id="region">
+          <option value="all">All Germany</option>
+          <option value="nrw">NRW</option>
+          <option value="bw">Baden-Württemberg</option>
+          <option value="by">Bavaria</option>
+          <option value="hls">Hesse · RLP · Saarland</option>
+          <option value="north">Niedersachsen · Bremen · Hamburg · SH</option>
+          <option value="east">Berlin · East</option>
+        </select>
+      </div>
+      <button class="sw" id="showBlocked" aria-pressed="false"><i></i>Show blocked programmes (why)</button>
+    </div>
+    <div class="hint" id="profileHint"></div>
+  </section>
+
+  <nav class="tabs" aria-label="View">
+    <button class="tab" id="tabAll" role="tab" aria-selected="true">Finder</button>
+    <button class="tab" id="tabShort" role="tab" aria-selected="false">Shortlist<b id="shortCnt">0</b></button>
+  </nav>
+
+  <div id="meta"></div>
+  <div id="list"></div>
+
+  <footer>
+    <b>How the verdicts work.</b> Every programme below was screened against official university pages (application ordinances, admission pages, exam-board rules) in September 2026. <b>Fit</b> = passes your profile on all hard filters. <b>Check first</b> = passes, but one named condition must be verified — usually by email. <b>Blocked</b> = fails a hard filter you set, with the reason. Language rules are recomputed live from your IELTS / MOI settings.<br>
+    <b>Always confirm on the official page before applying</b> — deadlines shift, programmes get accredited or discontinued. Summer windows for April 2027 entry run mainly Oct 2026 – Jan 2027. Built for students who need the summer semester, an English-taught course, and no German.
+  </footer>
+</main>
+
+<script>
+"use strict";
+/* ---------- data: 60 programmes, verified Sep 2026, official pages ---------- */
+const P=[
+{id:"bremen-cit",uni:"Universität Bremen",prog:"Communication and Information Technology",deg:"M.Sc.",campus:"Bremen",region:"north",start:"summer",ieltsMin:null,cefr:"C1",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:"2026-08-01",close:"2026-10-15",route:"direct",vpd:"none",nc:"open",url:"https://www.uni-bremen.de/en/study/all-study-programmes/programme-description?gId=142",quote:"AO: C1 English «is also proven if applicants acquired their last degree in English» — an English-medium bachelor satisfies it outright.",notes:["Starts 1 April 2027. Direct application — no uni-assist, no VPD. Semester fee ~€425, no tuition, no grade floor."]},
+{id:"do-ds",uni:"TU Dortmund",prog:"Data Science",deg:"M.Sc.",campus:"Dortmund",region:"nrw",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:2.7,tuition:0,open:"2026-11-01",close:"2027-01-15",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.tu-dortmund.de/studiengangsdetail/data-science-682/",quote:"B2 CEFR; accepted proof includes «MOI, Medium of Instruction certificate». Not NC — «guaranteed a place» if criteria met.",notes:["Content gate: ≥16 ECTS maths + ≥4 ECTS stats + ≥8 CS — verified met. Not NC: guaranteed place if criteria are satisfied."]},
+{id:"passau-cs",uni:"Uni Passau",prog:"Computer Science",deg:"M.Sc.",campus:"Passau",region:"by",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:2.7,tuition:0,open:"2026-11-01",close:"2026-12-15",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.uni-passau.de/en/msc-computer-science",quote:"«B2 CEFR, such as IELTS (score 5.5)… a first degree completed exclusively in English also counts as proof.» Summer application 1 Nov–15 Dec.",conds:["≥110 ECTS CS-related content + thesis abstract — verify count from transcript."]},
+{id:"passau-aie",uni:"Uni Passau",prog:"AI Engineering",deg:"M.Sc.",campus:"Passau",region:"by",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"byYear1",gre:"none",gradeFloor:2.7,tuition:0,open:"2026-11-01",close:"2026-12-15",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.uni-passau.de/en/msc-ai-eng",quote:"Fully English; same B2/IELTS 5.5 + English-degree rules as Passau CS.",conds:["≥35 ECTS maths (incl. theoretical CS) — your tally ≈28.5: VERIFY before applying.","German A1 certificate due by end of year 1 (free course provided)."]},
+{id:"kassel-aida",uni:"Uni Kassel",prog:"Artificial Intelligence & Data Science (AIDA)",deg:"M.Sc.",campus:"Kassel",region:"hls",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:2.5,tuition:0,open:"2026-10-01",close:"2027-01-15",route:"portal",vpd:"unverified",nc:"open",url:"https://www.uni-kassel.de/uni/studium/artificial-intelligence-and-data-science-master.html",quote:"B2 «Min. band score 5.5–6.5» per central table, no per-band minimums; MOI-Bescheinigung explicitly listed as accepted proof.",conds:["Programme still in accreditation and SS 2027 is its first possible round — email the Prüfungsbüro before relying on it.","Sonderformular required for external applicants."]},
+{id:"chem-ase",uni:"TU Chemnitz",prog:"Automotive Software Engineering",deg:"M.Sc.",campus:"Chemnitz",region:"east",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2027-01-15",route:"eduapp",vpd:"none",nc:"open",url:"https://www.tu-chemnitz.de/informatik/studium/studiengaenge/ma_automotive_software_engineering.php.en",quote:"«IELTS 5.5 … Confirmation of English as language of instruction» — both routes listed. No German proof at application. «Bachelor Computer Science & Engineering» is on the accepted-degree list.",conds:["One email to confirm the summer cohort actually runs.","Own EduApplication portal — no uni-assist/VPD/APS."]},
+{id:"hi-se",uni:"Uni Hildesheim",prog:"Software Engineering — International Master",deg:"M.Sc.",campus:"Hildesheim",region:"north",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-12-15",route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-hildesheim.de/se",quote:"MOI accepted: «a document from the university certifying a study completed fully in English».",conds:["Page says IELTS 6, the ordinance table says level 5 — moot via MOI, still confirm in one email.","Admission-restricted: selection score from bachelor grade."]},
+{id:"hi-da",uni:"Uni Hildesheim",prog:"Data Analytics — International Master",deg:"M.Sc.",campus:"Hildesheim",region:"north",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-12-15",route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-hildesheim.de/studium/studienangebot",quote:"Same ordinance family as Hildesheim SE — summer+winter start, MOI accepted.",conds:["Admission-restricted selection; confirm IELTS floor + MOI wording with admissions."]},
+{id:"nord-iot",uni:"HS Nordhausen",prog:"Computer Engineering for IoT Systems",deg:"M.Eng.",campus:"Nordhausen",region:"east",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:2.5,tuition:0,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.hs-nordhausen.de/studiengaenge/computer-engineering-for-iot-systems/",quote:"FAQ: «Kann ich Englisch mit MOI-Zertifikat nachweisen? Ja.» IELTS route needs 6.0 — the MOI route passes.",conds:["Summer application window shows no dates on the page — email to confirm the SS intake runs and when."]},
+{id:"muen-ds",uni:"Uni Münster",prog:"Data Science",deg:"M.Sc.",campus:"Münster",region:"nrw",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:"2026-11-01",close:"2027-01-15",route:"portal",vpd:"none",nc:"restricted",url:"https://www.uni-muenster.de/ZSB/zeigefach.html?nr=1286",quote:"§6(3): the B2 proof «is not required» if your bachelor was «conducted completely in English».",conds:["NC selection: grade + criteria points — 2.2 is mid-pack; apply anyway.","§6(2) content gate: ≥120 LP in math/CS/stats incl. 40 LP fundamentals — likely met."]},
+{id:"rwth-ds",uni:"RWTH Aachen",prog:"Data Science",deg:"M.Sc.",campus:"Aachen",region:"nrw",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"case",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-09-01",route:"rwthonline",vpd:"unverified",nc:"open",url:"https://www.informatik.rwth-aachen.de/cms/informatik/Studium/masterstudiengaenge/data-science/~gzhf/Informationen-zum-Bewerbungsverfahren/",quote:"Base rule IELTS 6.0 — but DS carries footnote 3: an English-language bachelor's thesis «can prove sufficient fluency» via an Examination-Board review.",conds:["Summer window for SoSe 2027 closed 1 Sep — email the Examination Board about the thesis review + next round.","No NC, no GRE, no tuition."]},
+{id:"hei-dacs",uni:"Heidelberg University",prog:"Data and Computer Science (DaCS)",deg:"M.Sc.",campus:"Heidelberg",region:"bw",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:2.3,tuition:190,open:null,close:"2026-09-15",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.informatik.uni-heidelberg.de/studium/master/dacs/application",quote:"ZulO: IELTS 5.5 accepted, English-taught degree accepted, summer start allowed.",conds:["The summer deadline (15 Sep of prior year) already passed for SoSe 2027 — email admissions about late/second-round seats; otherwise SoSe 2028.","~€190/sem only (BW tuition apparently waived) — re-verify."]},
+{id:"mann-wi",uni:"Uni Mannheim",prog:"Wirtschaftsinformatik (Information Systems)",deg:"M.Sc.",campus:"Mannheim",region:"bw",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:1500,open:"2026-10-15",close:"2026-11-15",route:"portal",vpd:"none",nc:"restricted",url:"https://www.uni-mannheim.de/studium/vor-dem-studium/studienangebot/master-wirtschaftsinformatik/",quote:"No GRE for this programme; an English-taught first degree (≥50% English) replaces the IELTS 6.0.",conds:["Needs ≥30 ECTS business/BWI + 18 ECTS maths in the bachelor — pure CSE transcripts may fall short: check yours.","Start is February (their «summer» cycle). Tuition €1,500/sem for non-EU."]},
+{id:"fuas-it",uni:"Frankfurt UAS",prog:"Information Technology",deg:"M.Eng.",campus:"Frankfurt",region:"hls",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"unknown",bandMin:null,german:"none",gre:"none",gradeFloor:2.5,tuition:0,open:null,close:"2026-10-20",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.frankfurt-university.de/en/studies/master-programs/information-technology-meng/for-prospective-students/",quote:"B2 required via IELTS/TOEFL/Cambridge/DAAD — no number or MOI stance published.",conds:["3-semester track = summer start; grade floor 2.5 + ≥210 ECTS pass.","Email: does B2 mean IELTS 5.5? Is MOI accepted? Is a CS bachelor eligible (EE-anchored)?"]},
+{id:"thi-ai",uni:"TH Ingolstadt",prog:"Artificial Intelligence",deg:"M.Sc.",campus:"Ingolstadt",region:"by",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"unknown",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:1200,open:"2026-10-15",close:"2027-01-15",route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.thi.de/en/computer-science/degree-programmes/artificial-intelligence-msc/",quote:"«Held in English. A level of B2 is required» — summer start (15 March) confirmed.",conds:["Exact accepted-test list + MOI stance unverified — email.","210 ECTS required (you pass); planned non-EU tuition €1,200/sem."]},
+{id:"deg-aid",uni:"Deggendorf IT (THD)",prog:"Artificial Intelligence & Data Science",deg:"M.Sc.",campus:"Deggendorf",region:"by",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"unknown",bandMin:5.5,german:"none",gre:"none",gradeFloor:null,tuition:500,open:"2026-10-15",close:"2026-11-15",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.th-deg.de/aid-m-en",quote:"DIT's table maps B2 to IELTS «5.5–6.5 in each section» — a per-band 5.5 that Reading 5.0 fails. MOI stance unverified.",conds:["March start; fee-based admission test in November, only 20 places.","€500/sem service fee for non-EU on top of no tuition."]},
+{id:"tum-inf",uni:"TU Munich (TUM)",prog:"Informatics",deg:"M.Sc.",campus:"Munich",region:"by",start:"summer",ieltsMin:6.5,cefr:"C1",moi:"case",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:6000,open:"2026-10-01",close:"2026-11-30",route:"portal",vpd:"yes",nc:"restricted",url:"https://www.tum.de/en/studies/degree-programs/detail/informatics-master-of-science-msc",quote:"IELTS 6.5 base — but a bachelor taught in English «in at least 50% of the program» proves English via transcripts or an official university letter.",conds:["Aptitude assessment is competitive (no fixed grade floor; ranking-based).","€6,000/sem non-EU tuition unless waived — the decisive question."]},
+{id:"il-ds",uni:"TU Ilmenau",prog:"Data Science",deg:"M.Sc.",campus:"Ilmenau",region:"east",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2027-01-15",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.tu-ilmenau.de/en/study/before-the-study/range-of-courses/master/data-science-msc",quote:"Start April 1 or Oct 1, no NC. Apply with B2 (Category 3 = IELTS 5.5–6.5); direct admission needs C1.",conds:["Admission is conditional: B2 entry now, C1 proof before full enrolment. MOI gets no waiver (Bangladesh not on the exemption list)."]},
+{id:"il-cse",uni:"TU Ilmenau",prog:"Research in Computer & Systems Engineering",deg:"M.Sc.",campus:"Ilmenau",region:"east",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2027-01-15",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.tu-ilmenau.de/en/study/before-the-study/range-of-courses/master/research-in-computer-and-systems-engineering-msc",quote:"English programme, April start possible; same B2-apply / C1-direct rule as Ilmenau DS.",conds:["Conditional admission route only — plan for a C1 step in Germany."]},
+{id:"aug-mcs",uni:"Uni Augsburg",prog:"Mathematics and Computer Science",deg:"M.Sc.",campus:"Augsburg",region:"by",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"unknown",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:"2026-11-01",close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://www.uni-augsburg.de/en/studium/studienangebot/uebersicht/mathematics-and-computer-science-msc/",quote:"English B2 minimum, no German minimum stated; start winter or summer.",conds:["Instruction is mixed German/English — how much you can take in English is unverified. Email the advisor."]},
+{id:"hfu-aim",uni:"HS Furtwangen",prog:"AI & Data Science for Digital Business Mgmt",deg:"M.Sc.",campus:"Furtwangen",region:"bw",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:-1,open:null,close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://www.hs-furtwangen.de/en/study/programmes/artificial-intelligence-and-data-science-for-digital-business-management-master",quote:"Summer-only start (March); B2 via «a study program in English language of tuition» — MOI accepted.",conds:["Needs ≥210 ECTS (pass) AND one year of relevant professional experience (only if you have it).","Hybrid: ~40 on-site days/semester; professional-master fees unconfirmed."]},
+{id:"hi-fa",uni:"Uni Hildesheim",prog:"Future Analytics: AI & Audio Worlds",deg:"M.Sc./M.A.",campus:"Hildesheim",region:"north",start:"summer",ieltsMin:5.0,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-12-15",route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-hildesheim.de/studium/studienangebot",quote:"Launches SoSe 2027; IELTS band 5 or a fully-English prior degree accepted.",conds:["30 places; selection weighs audio/music/sound-studies background — a CS bachelor is a partial match. Second choice."]},
+{id:"kiel-inf",uni:"Uni Kiel",prog:"Informatik (Computer Science)",deg:"M.Sc.",campus:"Kiel",region:"north",start:"summer",ieltsMin:4.0,cefr:"B1",moi:"yes",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://www.uni-kiel.de/de/studium/studienangebot/detail/master-informatik",quote:"Open enrolment, English floor only B1.",conds:["Modules run «in German or in English» — mixed delivery; usable only if you accept some German-taught modules."]},
+/* ----- blocked-by-computation (still useful to show why) ----- */
+{id:"kass-cs",uni:"Uni Kassel",prog:"Computer Science",deg:"M.Sc.",campus:"Kassel",region:"hls",start:"summer",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:0,open:"2026-10-01",close:"2027-01-15",route:"portal",vpd:"unverified",nc:"open",url:"https://www.uni-kassel.de/uni/studium/computer-science-master/bewerbung-und-zulassung.html",quote:"Summer + MOI + B2 all fine — but non-EU bachelors need GRE 160Q/155V/3.5AW.",conds:[]},
+{id:"hhu-aids",uni:"HHU Düsseldorf",prog:"Artificial Intelligence & Data Science",deg:"M.Sc.",campus:"Düsseldorf",region:"nrw",start:"winter",ieltsMin:6.0,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:1500,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.hhu.de/studium/studienangebot/studiengang-informationen/artificial-intelligence-and-data-science-master",quote:"English-taught with MOI exemption — but «Studienbeginn: Wintersemester».",conds:["Watch future cycles: would otherwise be a fit."]},
+{id:"bremer-esd",uni:"HS Bremerhaven",prog:"Embedded Systems Design",deg:"M.Sc.",campus:"Bremerhaven",region:"north",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"explicit",bandMin:null,german:"A2",gre:"none",gradeFloor:2.3,tuition:0,open:null,close:"2026-12-31",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.hs-bremerhaven.de/en/study-programs/master/embedded-systems-design-m-sc",quote:"MOI accepted despite the IELTS-6 line; but «proof of German level A2» is required.",conds:["Subject prereqs: maths/physics 15 ECTS, EE 10, CS 5, more."]},
+{id:"leu-mds",uni:"Leuphana Lüneburg",prog:"Management & Data Science",deg:"M.Sc.",campus:"Lüneburg",region:"north",start:"winter",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://www.leuphana.de/management-data-science",quote:"Accepts IELTS 5.5 / 30 CP taught in English — but starts only 1 October.",conds:[]},
+{id:"sar-cs",uni:"Saarland University",prog:"CS / Data Science & AI / Cybersecurity",deg:"M.Sc.",campus:"Saarbrücken",region:"hls",start:"summer",ieltsMin:7.0,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:0,open:null,close:"2026-11-15",route:"portal",vpd:"none",nc:"restricted",url:"https://saarland-informatics-campus.de/en/studium-studies/master-english/application-guide/",quote:"«A confirmation of your university or a MOI is not a sufficient equivalent» + IELTS 7.0 + GRE/GATE.",conds:[]},
+{id:"stut-cs",uni:"Uni Stuttgart",prog:"Computer Science",deg:"M.Sc.",campus:"Stuttgart",region:"bw",start:"summer",ieltsMin:7.0,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:1500,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-stuttgart.de/en/study/study-programs/Computer-Science-M.Sc.-00001/",quote:"«IELTS band 7.0 or better… Medium of Instruction is not accepted».",conds:[]},
+{id:"frei-cs",uni:"Uni Freiburg",prog:"Computer Science / Embedded Systems",deg:"M.Sc.",campus:"Freiburg",region:"bw",start:"summer",ieltsMin:7.0,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:1500,open:null,close:"2026-12-15",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.tf.uni-freiburg.de/en/study-programs/computer-science/m-sc-computer-science",quote:"«MOI was English is not sufficient» + IELTS 7.0.",conds:[]},
+{id:"tuda-cs",uni:"TU Darmstadt",prog:"CS / AI & Machine Learning / IT Security",deg:"M.Sc.",campus:"Darmstadt",region:"hls",start:"both",ieltsMin:7.0,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.informatik.tu-darmstadt.de/studium_fb20/im_studium/studiengaenge_liste/computer_science_msc.en.jsp",quote:"«UNIcert III / IELTS 7.0 / CEFR C1».",conds:[]},
+{id:"bonn-cs",uni:"Uni Bonn",prog:"Computer Science / Artificial Intelligence",deg:"M.Sc.",campus:"Bonn",region:"nrw",start:"winter",ieltsMin:6.0,cefr:"B2",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.informatik.uni-bonn.de/en/study",quote:"IELTS 6.0+ and MOI not accepted.",conds:[]},
+{id:"pad-cs",uni:"Uni Paderborn",prog:"Computer Science",deg:"M.Sc.",campus:"Paderborn",region:"nrw",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"none",nc:"restricted",url:"https://cs.upb.de/en/studies",quote:"«MOI alone is not sufficient» + IELTS 6.5 + GRE/dMAT.",conds:[]},
+{id:"rptu-cs",uni:"RPTU Kaiserslautern",prog:"Computer Science",deg:"M.Sc.",campus:"Kaiserslautern",region:"hls",start:"both",ieltsMin:6.5,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://www.cs.rptu.de/en/studium/studiengaenge/bm-inf/how_to_apply.ma/",quote:"«At least 6.5 in the IELTS», no MOI route.",conds:[]},
+{id:"tri-ds",uni:"Uni Trier",prog:"Data Science",deg:"M.Sc.",campus:"Trier",region:"hls",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:1.7,tuition:0,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.uni-trier.de/en/studies/application-admission/application-english-taught-master-programmes/proof-of-english-language-proficiency",quote:"C1/6.5 and «a MOI letter is not sufficient» + CS-bachelor grade 1.7 floor.",conds:[]},
+{id:"bam-iss",uni:"Uni Bamberg",prog:"ISISS / CS-family masters",deg:"M.Sc.",campus:"Bamberg",region:"by",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-bamberg.de/studiengaenge/international-software-systems-science-master/",quote:"«A confirmation that your studies were taught in English… is not sufficient proof».",conds:[]},
+{id:"mdd-dke",uni:"Otto-von-Guericke Magdeburg",prog:"Data and Knowledge Engineering",deg:"M.Sc.",campus:"Magdeburg",region:"east",start:"both",ieltsMin:7.0,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:2.3,tuition:0,open:null,close:null,route:"uniassist",vpd:"yes",nc:"open",url:"https://www.ovgu.de/Data_and_Knowledge_Engineering_master-path-5,76024,107032,48816,48822.html",quote:"C1 required; OVGU maps IELTS B2 = 6.5, C1 = 7.0. MOI exemptions are anglosphere-only.",conds:[]},
+{id:"drs-cs",uni:"TU Dresden",prog:"Computer Science",deg:"M.Sc.",campus:"Dresden",region:"east",start:"summer",ieltsMin:7.0,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-11-30",route:"portal",vpd:"unverified",nc:"restricted",url:"https://tu-dresden.de/ing/informatik/studium/studienangebot/master-studiengaenge/m-sc-computer-science/admission",quote:"C1 CEFR prerequisite; GRE «strongly recommended» for non-EU.",conds:[]},
+{id:"ros-csi",uni:"Uni Rostock",prog:"Computer Science International",deg:"M.Sc.",campus:"Rostock",region:"east",start:"both",ieltsMin:7.0,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-11-30",route:"uniassist",vpd:"yes",nc:"open",url:"https://www.uni-rostock.de/computer-science-international-master/",quote:"«IELTS with at least 7,0» + 85% CGPA.",conds:[]},
+{id:"kit-cs",uni:"KIT",prog:"Computer Science (INT)",deg:"M.Sc.",campus:"Karlsruhe",region:"bw",start:"summer",ieltsMin:6.5,cefr:"C1",moi:"case",bandMin:5.5,german:"none",gre:"req",gradeFloor:null,tuition:1500,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.informatik.kit.edu/english/14346.php",quote:"IELTS 6.5 (no band <5.5) + GRE mandatory for non-Lisbon degrees + top-10% route.",conds:[]},
+{id:"kost-cis",uni:"Uni Konstanz",prog:"Computer and Information Science",deg:"M.Sc.",campus:"Konstanz",region:"bw",start:"winter",ieltsMin:6.0,cefr:"B2",moi:"rejected",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-konstanz.de/en/study/before-you-study/study-programmes/detail/computer-and-information-science/",quote:"«Visa-required applicants can only apply for winter semester» + IELTS 6.0 + GRE.",conds:[]},
+{id:"thk-ds",uni:"TH Köln",prog:"Digital Sciences",deg:"M.Sc.",campus:"Cologne",region:"nrw",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:"2026-10-31",route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.th-koeln.de/en/academics/digital-sciences-masters-program--how-to-apply_84162.php",quote:"Summer + English, but IELTS 6.0 with no MOI pathway.",conds:[]},
+{id:"hbrs-as",uni:"H-BRS Sankt Augustin",prog:"Autonomous Systems",deg:"M.Sc.",campus:"Sankt Augustin",region:"nrw",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.h-brs.de/en/spz/english-language-certificates",quote:"«A medium of instruction letter does not exempt you» + IELTS 6.5; 15 seats.",conds:[]},
+{id:"rub-cs",uni:"Ruhr-Uni Bochum",prog:"Computer Science (international)",deg:"M.Sc.",campus:"Bochum",region:"nrw",start:"winter",ieltsMin:7.0,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://informatik.rub.de/studium/bewerbung/msc-inf/",quote:"C1/IELTS 7.0, no MOI, and non-EU start always winter.",conds:[]},
+{id:"tuhh-cs",uni:"TU Hamburg",prog:"Computer Science",deg:"M.Sc.",campus:"Hamburg",region:"north",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.tuhh.de/en/studies/study-programmes",quote:"IELTS 6.5; MOI exemption list excludes Bangladesh.",conds:[]},
+{id:"uhh-dsai",uni:"Uni Hamburg",prog:"Data Science and Artificial Intelligence",deg:"M.Sc.",campus:"Hamburg",region:"north",start:"winter",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.informatik.uni-hamburg.de/en/studium",quote:"Winter-only + IELTS 6.5 + «degree taught in English generally not accepted».",conds:[]},
+{id:"ude-ise",uni:"Uni Duisburg-Essen",prog:"Computer Engineering (ISE)",deg:"M.Sc.",campus:"Duisburg",region:"nrw",start:"both",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:null,german:"B2",gre:"none",gradeFloor:null,tuition:0,open:"2025-11-01",close:"2026-03-15",route:"uniassist",vpd:"unverified",nc:"open",url:"https://www.uni-due.de/ise/admission.php",quote:"English B2 via IELTS/MOI ✅ and summer start ✅ — but B2 German required too.",conds:[]},
+{id:"ude-wi",uni:"Uni Duisburg-Essen",prog:"Wirtschaftsinformatik",deg:"M.Sc.",campus:"Essen",region:"nrw",start:"both",ieltsMin:5.5,cefr:"B2",moi:"explicit",bandMin:5.5,german:"DSH",gre:"none",gradeFloor:null,tuition:0,open:"2025-11-01",close:"2027-01-15",route:"uniassist",vpd:"unverified",nc:"open",url:"https://www.uni-due.de/studienangebote/studiengang.php?id=111",quote:"English OK via fully-English bachelor — but DSH-2 German + IELTS R/W≥5.5.",conds:[]},
+{id:"ude-medinf",uni:"Uni Duisburg-Essen",prog:"Medical Informatics (with FH Do)",deg:"M.Sc.",campus:"Essen/Dortmund",region:"nrw",start:"summer",ieltsMin:6.5,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-due.de/studienangebote/studiengang.php?id=218",quote:"Fully English + summer start — but IELTS 6.5 (C1) and healthcare-content prerequisites.",conds:[]},
+{id:"heis-se",uni:"Hochschule Heilbronn",prog:"Software Engineering / Applied AI",deg:"M.Sc.",campus:"Heilbronn",region:"bw",start:"both",ieltsMin:6.0,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:2.5,tuition:1500,open:null,close:"2026-12-15",route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.hs-heilbronn.de/en/software-engineering-master",quote:"Summer start exists — IELTS 6.0 blocks 5.5; MOI not listed; €1,500/sem.",conds:[]},
+{id:"bay-cs",uni:"Uni Bayreuth",prog:"Computer Science",deg:"M.Sc.",campus:"Bayreuth",region:"by",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.cbd-bayreuth.de",quote:"«keine proficiency letters» — IELTS 6.5, MOI rejected.",conds:[]},
+{id:"reg-cs",uni:"Uni Regensburg",prog:"Informatik und Data Science",deg:"M.Sc.",campus:"Regensburg",region:"by",start:"both",ieltsMin:null,cefr:"B2",moi:"case",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:0,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.ucr.uni-regensburg.de/studiengaenge/informatik-und-data-science-master",quote:"GRE Quant ≥164 for non-Lisbon bachelors; MOI only partial.",conds:[]},
+{id:"fau-ai",uni:"FAU Erlangen-Nürnberg",prog:"Artificial Intelligence",deg:"M.Sc.",campus:"Erlangen",region:"by",start:"both",ieltsMin:null,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:4000,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www.fau.de/studium/angebot/master/ki/",quote:"GRE required; non-EU tuition €4,000/sem from SS 2027.",conds:[]},
+{id:"osn-cc",uni:"Uni Osnabrück",prog:"Cognitive Computing (part-time)",deg:"M.Sc.",campus:"Osnabrück",region:"north",start:"winter",ieltsMin:5.5,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:5000,open:null,close:null,route:"uniassist",vpd:"yes",nc:"restricted",url:"https://www-cognitivescience.uni-osnabrueck.de",quote:"Accepts IELTS 5.5 = B2 — but winter-only, part-time and €5,000/sem.",conds:[]},
+{id:"lmu-ds",uni:"LMU Munich",prog:"Data Science",deg:"M.Sc.",campus:"Munich",region:"by",start:"winter",ieltsMin:6.0,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.m-datascience.mathematik-informatik-statistik.uni-muenchen.de",quote:"«The last intake was winter semester 2024/25» — no current intake.",conds:[]},
+{id:"aug-elite",uni:"Uni Augsburg",prog:"Software Engineering (Elite)",deg:"M.Sc.",campus:"Augsburg",region:"by",start:"winter",ieltsMin:6.5,cefr:"C1",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://elite-se.informatik.uni-augsburg.de/faq/",quote:"«Can I start in the summer term? No.» — outstanding grades expected.",conds:[]},
+{id:"mm-ds",uni:"Uni Mannheim",prog:"Mannheim Master in Data Science",deg:"M.Sc.",campus:"Mannheim",region:"bw",start:"summer",ieltsMin:6.0,cefr:"B2",moi:"explicit",bandMin:null,german:"none",gre:"req",gradeFloor:null,tuition:1500,open:"2026-10-15",close:"2026-11-15",route:"portal",vpd:"none",nc:"restricted",url:"https://www.uni-mannheim.de/studium/vor-dem-studium/studienangebot/mannheim-master-in-data-science/",quote:"February start + MOI route — but GRE 162Q/151V is the sole selection criterion.",conds:[]},
+{id:"rptu-esy",uni:"RPTU Kaiserslautern",prog:"Embedded Computing Systems",deg:"M.Sc.",campus:"Kaiserslautern",region:"hls",start:"both",ieltsMin:5.5,cefr:"B2",moi:"no",bandMin:null,german:"none",gre:"none",gradeFloor:2.0,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"open",url:"https://eit.rptu.de/en/esy/admission",quote:"Bachelor grade floor ≈ German 2.0 (CGPA 3.5/4).",conds:[]},
+/* German-taught wall — kept for the search, auto-blocked by no-German filter */
+{id:"de-kit",uni:"KIT",prog:"Informatik",deg:"M.Sc.",campus:"Karlsruhe",region:"bw",start:"both",de:true,german:"B2",gre:"none",tuition:0,nc:"restricted",url:"https://www.sdi.kit.edu/",quote:"«offered in German».",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-tubi",uni:"Uni Tübingen",prog:"Computer Science",deg:"M.Sc.",campus:"Tübingen",region:"bw",start:"both",de:true,german:"B2",gre:"none",tuition:1500,nc:"open",url:"https://uni-tuebingen.de/en/study/finding-a-course/degree-programmes-available/detail/course/computer-science-master/",quote:"Language of instruction: German.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-goe",uni:"Goethe Uni Frankfurt",prog:"Informatik / Wirtschaftsinformatik",deg:"M.Sc.",campus:"Frankfurt",region:"hls",start:"both",de:true,german:"B2",gre:"none",tuition:0,nc:"restricted",url:"https://www.uni-frankfurt.de/de/studium/studiengaenge/informatik-master",quote:"Unterrichtssprache Deutsch.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"uniassist",vpd:"unverified",open:null,close:null},
+{id:"de-mar",uni:"Uni Marburg",prog:"Informatik / Data Science",deg:"M.Sc.",campus:"Marburg",region:"hls",start:"both",de:true,german:"DSH",gre:"none",tuition:0,nc:"restricted",url:"https://www.uni-marburg.de/de/fb12/studium/studiengaenge/m-sc-informatik/auf-einen-blick",quote:"C1 English or B1+DSH-II German.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-gie",uni:"Uni Gießen",prog:"Angewandte Informatik / Data Science",deg:"M.Sc.",campus:"Gießen",region:"hls",start:"both",de:true,german:"B2",gre:"none",tuition:0,nc:"open",url:"https://www.uni-giessen.de/de/studium/studienangebot/master/angewandte-informatik",quote:"Hauptunterrichtssprache Deutsch.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-ulm",uni:"Uni Ulm",prog:"Informatik / SE / KI / CSE / WInf",deg:"M.Sc.",campus:"Ulm",region:"bw",start:"both",de:true,german:"B2",gre:"none",tuition:1500,nc:"open",url:"https://www.uni-ulm.de/studium/bewerbung-und-immatrikulation/masterstudiengaenge/informatik-master/",quote:"All require German; no English CS master with a summer seat.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-hagen",uni:"FernUni Hagen",prog:"Computer Science / Data Science",deg:"M.Sc.",campus:"Hagen (distance)",region:"nrw",start:"both",de:true,german:"B2",gre:"none",tuition:0,nc:"open",url:"https://www.fernuni-hagen.de/english/study/academic-programs/",quote:"«offered and assessed exclusively in German».",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-fub",uni:"FU Berlin",prog:"Informatik / Data Science",deg:"M.Sc.",campus:"Berlin",region:"east",start:"winter",de:true,german:"DSH",gre:"none",tuition:0,nc:"restricted",url:"https://www.fu-berlin.de/en/study",quote:"CS: German + DSH-2. DS: C1 (MOI waived!) but winter-only.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"uniassist",vpd:"unverified",open:null,close:null},
+{id:"de-pot",uni:"Uni Potsdam / HPI",prog:"Computer Science / IT-Systems Eng.",deg:"M.Sc.",campus:"Potsdam",region:"east",start:"both",de:true,german:"B2",gre:"none",tuition:0,nc:"restricted",url:"https://hpi.de/en/studying/",quote:"C1 English requirement.",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null},
+{id:"de-sie",uni:"Uni Siegen",prog:"Computer Science",deg:"M.Sc.",campus:"Siegen",region:"nrw",start:"both",ieltsMin:6.5,cefr:"C1",moi:"rejected",bandMin:null,german:"none",gre:"none",gradeFloor:null,tuition:0,open:null,close:null,route:"portal",vpd:"unverified",nc:"restricted",url:"https://www.uni-siegen.de/en",quote:"IELTS 6.5; MOI rejected.",conds:[]},
+{id:"de-rwu",uni:"Hochschule Ravensburg-Weingarten",prog:"Computer Science",deg:"M.Sc.",campus:"Weingarten",region:"bw",start:"both",de:true,german:"DSH",gre:"none",tuition:0,nc:"restricted",url:"https://www.hs-weingarten.de/en",quote:"German-taught (DSH-2/TestDaF).",conds:[],moi:"no",ieltsMin:null,cefr:null,bandMin:null,gradeFloor:null,route:"portal",vpd:"unverified",open:null,close:null}
+];
+
+/* ---------- state ---------- */
+const DEF={moi:true,ielts:5.5,reading:5.0,grade:2.2,noGerman:true,noGRE:true,summerOnly:true,feeCap:99999,region:"all",q:"",showBlocked:false,tab:"all"};
+let S=Object.assign({},DEF);
+try{const j=localStorage.getItem("ssf-v1");if(j)Object.assign(S,JSON.parse(j));}catch(e){}
+function save(){try{localStorage.setItem("ssf-v1",JSON.stringify(S));}catch(e){}}
+/* shortlist + remarks: separate key, survives profile/filter edits */
+let M={ids:[],notes:{}};
+try{const j=localStorage.getItem("ssf-marks-v1");if(j){const o=JSON.parse(j);if(o&&Array.isArray(o.ids))M.ids=o.ids;if(o&&o.notes&&typeof o.notes==="object")M.notes=o.notes;}}catch(e){}
+function saveMarks(){try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}}
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const opt=(v,l)=>`<option value="${v}">${l}</option>`;
+function fillSel(sel,vals,cur,fmt){vals.forEach(v=>sel.insertAdjacentHTML("beforeend",opt(v,fmt?fmt(v):v)));sel.value=String(cur);}
+fillSel($("ielts"),[4.5,5,5.5,6,6.5,7,7.5],S.ielts,v=>" IELTS "+v.toFixed(1));
+fillSel($("reading"),[4,4.5,5,5.5,6,6.5],S.reading,v=>" Band "+v.toFixed(1));
+fillSel($("grade"),[1,1.1,1.3,1.5,1.7,2,2.1,2.2,2.3,2.5,2.7,3,3.3],S.grade,v=>" "+v.toFixed(1).replace(".",","));
+$("feeCap").value=String(S.feeCap);$("region").value=S.region;$("q").value=S.q;
+$("ielts").addEventListener("change",e=>{S.ielts=parseFloat(e.target.value);render();});
+$("reading").addEventListener("change",e=>{S.reading=parseFloat(e.target.value);render();});
+$("grade").addEventListener("change",e=>{S.grade=parseFloat(e.target.value);render();});
+$("feeCap").addEventListener("change",e=>{S.feeCap=parseInt(e.target.value);render();});
+$("region").addEventListener("change",e=>{S.region=e.target.value;render();});
+$("q").addEventListener("input",e=>{S.q=e.target.value.trim().toLowerCase();render();});
+function bindSw(id,key){const el=$(id);el.setAttribute("aria-pressed",S[key]);el.addEventListener("click",()=>{S[key]=!S[key];el.setAttribute("aria-pressed",S[key]);render();});}
+bindSw("moiBtn","moi");bindSw("noGerman","noGerman");bindSw("noGRE","noGRE");bindSw("summerOnly","summerOnly");bindSw("showBlocked","showBlocked");
+$("tabAll").addEventListener("click",()=>{S.tab="all";render();});
+$("tabShort").addEventListener("click",()=>{S.tab="short";render();});
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest(".tick");if(!b)return;
+  const id=b.dataset.id;
+  if(M.ids.includes(id))M.ids=M.ids.filter(x=>x!==id);else M.ids.push(id);
+  saveMarks();render();
+});
+$("list").addEventListener("input",e=>{
+  const t=e.target;
+  if(t.classList&&t.classList.contains("note")){M.notes[t.dataset.id]=t.value;saveMarks();}
+});
+
+/* ---------- evaluation ---------- */
+function cefrNeed(p){if(p.ieltsMin!=null)return p.ieltsMin;return p.cefr==="C1"?7.0:p.cefr==="B2"?5.5:p.cefr==="B1"?4.0:5.5;}
+function evaluate(p){
+  const fails=[],conds=[],notes=[];let langChip="";
+  if(p.de){fails.push("German-taught");langChip=`<span class="tag no">German-taught</span>`;}
+  else{
+    const need=cefrNeed(p);
+    const ieltsOk=need==null?false:S.ielts>=need&&!(p.bandMin&&S.reading<p.bandMin);
+    const moiAccepted=["explicit","yes","case","unknown"].includes(p.moi);
+    const moiRoute=S.moi&&moiAccepted;
+    let chip;
+    if(ieltsOk){chip=`<span class="tag ok">IELTS ${S.ielts.toFixed(1)} OK (needs ${need.toFixed(1)})</span>`;}
+    else if(moiRoute){
+      chip=p.moi==="explicit"||p.moi==="yes"?'<span class="tag ok">MOI ✓</span>':'<span class="tag warn">MOI case-by-case</span>';
+    }
+    else{
+      const reasons=[];
+      if(p.bandMin&&S.reading<p.bandMin&&S.ielts>=need)reasons.push(`Reading band ≥ ${p.bandMin.toFixed(1)} required`);
+      else if(need!=null)reasons.push(`Needs IELTS ${need.toFixed(1)} (${p.cefr||""})`);
+      if(!S.moi)reasons.push(p.moi==="rejected"?"MOI refused here":"MOI off");
+      else if(!moiAccepted)reasons.push("MOI not accepted here");
+      chip=p.moi==="rejected"?'<span class="tag no">MOI ✗ refused</span>':`<span class="tag no">needs IELTS ${need!=null?need.toFixed(1):"—"}</span>`;
+      reasons.forEach(r=>fails.push(r));
+    }
+    if(moiRoute&&p.moi==="case")conds.push("MOI/thesis route needs examination-board approval — not automatic.");
+    if(moiRoute&&p.moi==="unknown")conds.push("MOI acceptance not published — confirm by email.");
+    langChip=chip;
+  }
+  if(S.noGerman&&p.german&&p.german!=="none"){
+    if(p.german==="byYear1")conds.push("German A1 required by end of year 1 (free course at uni).");
+    else fails.push({A2:"German A2 required",B2:"German B2 required",DSH:"DSH-2 German required"}[p.german]);
+  }
+  if(S.noGRE&&p.gre==="req")fails.push("GRE required");
+  if(S.summerOnly&&p.start!=="summer"&&p.start!=="both")fails.push("No summer intake");
+  if(p.tuition!==-1&&p.tuition>S.feeCap)fails.push(`Tuition €${p.tuition.toLocaleString("en")}/sem`);
+  if(p.gradeFloor&&S.grade>p.gradeFloor)fails.push(`Needs grade ≤ ${p.gradeFloor.toFixed(1).replace(".",",")} (you: ${S.grade.toFixed(1).replace(".",",")})`);
+  (p.conds||[]).forEach(c=>c&&c[0]==="#"?notes.push(c.slice(1)):conds.push(c));
+  (p.notes||[]).forEach(c=>notes.push(c));
+  const verdict=fails.length?"r":(conds.length?"a":"g");
+  return{fails,conds,notes,verdict,langChip};
+}
+function dl(p){
+  if(!p.open&&!p.close)return`<span class="st up">Window not published — ask uni</span>`;
+  const now=new Date();now.setHours(0,0,0,0);
+  const o=p.open?new Date(p.open+"T00:00:00"):null,c=p.close?new Date(p.close+"T23:59:59"):null;
+  const day=86400000,dd=d=>Math.round(d/day);
+  const fmt=dt=>dt?dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"";
+  if(c&&c<now)return`<span class="st closed">Closed ${fmt(c)}</span><br>${p.open?`opens again for next cycle`:`next cycle check site`}`;
+  if(o&&o>now)return`<span class="st up">Opens in ${dd(o-now)} d</span><br><span class="win">${fmt(o)} → ${fmt(c)}${c&&c<now?" ✕":""}</span>`;
+  if(c){const n=dd(c-now);const cls=n<=10?"soon":n<=30?"up":"";return`<span class="st ${cls}">${n<=0?"Last day!":"Closes in "+n+" d"}</span><br><span class="win">by ${fmt(c)}</span>`;}
+  return`<span class="st open">Open now</span><br><span class="win">since ${fmt(o)}</span>`;
+}
+const RN={open:"Open admission",restricted:"NC / selection",selection:"Selection"};
+const REG={nrw:"NRW",bw:"Baden-Württemberg",by:"Bavaria",hls:"Hesse · RLP · Saarland",north:"North",east:"East"};
+
+/* ---------- render ---------- */
+function render(){
+  save();
+  const scored=P.map(p=>({p,e:evaluate(p)}));
+  const vis=S.tab==="short"?scored.filter(({p})=>M.ids.includes(p.id)):scored.filter(({p,e})=>{
+    if(e.verdict==="r"&&!S.showBlocked)return false;
+    if(S.region!=="all"&&p.region!==S.region)return false;
+    if(S.q&&!( (p.uni+" "+p.prog+" "+p.campus).toLowerCase().includes(S.q)))return false;
+    return true;
+  });
+  $("shortCnt").textContent=M.ids.length;
+  $("tabAll").setAttribute("aria-selected",S.tab==="short"?"false":"true");
+  $("tabShort").setAttribute("aria-selected",S.tab==="short"?"true":"false");
+  const rank=v=>v==="g"?0:v==="a"?1:2;
+  const now=new Date();now.setHours(0,0,0,0);
+  const status=p=>{
+    if(!p.open&&!p.close)return 3;
+    const o=p.open?new Date(p.open+"T00:00:00"):null,c=p.close?new Date(p.close+"T23:59:59"):null;
+    if(c&&c<now)return 4;
+    if(o&&o>now)return 2;
+    return 1;
+  };
+  vis.sort((a,b)=>{
+    const sa=status(a.p),sb=status(b.p);
+    if(sa!==sb)return sa-sb;
+    if(rank(a.e.verdict)!==rank(b.e.verdict))return rank(a.e.verdict)-rank(b.e.verdict);
+    const ca=a.p.close||"9999",cb=b.p.close||"9999";
+    return ca<cb?-1:1;
+  });
+  const nG=vis.filter(x=>x.e.verdict==="g").length,nA=vis.filter(x=>x.e.verdict==="a").length;
+  const openNow=scored.filter(({p,e})=>e.verdict!=="r"&&status(p)===1).length;
+  $("stats").innerHTML=`<b>${nG+nA}</b> programmes match · <b>${nG}</b> clean fits<br><span class="live">${openNow} window${openNow===1?"":"s"} open NOW</span>`;
+  $("meta").innerHTML=S.tab==="short"
+    ?`<span class="cnt">${vis.length}</span> on your shortlist · picks &amp; remarks saved in this browser · sorted by deadline urgency`
+    :`<span class="cnt">${vis.length}</span> shown · sorted by deadline urgency${S.showBlocked?" · blocked included":""}`;
+  $("profileHint").innerHTML=`Profile in use: <b>${S.moi?"MOI certificate":"IELTS "+S.ielts.toFixed(1)+" (R "+S.reading.toFixed(1)+")"}</b> · grade <b>${S.grade.toFixed(1).replace(".",",")}</b>${S.noGerman?" · no German":""}${S.noGRE?" · no GRE":""}${S.summerOnly?" · summer only":""}${S.feeCap<99999?" · tuition ≤ €"+S.feeCap.toLocaleString("en"):""}`;
+  $("list").innerHTML=vis.map(({p,e})=>{
+    const chips=[
+      e.langChip,
+      p.german==="none"?`<span class="tag ok">No German</span>`:p.german==="byYear1"?`<span class="tag warn">German A1 in yr 1</span>`:`<span class="tag no">German ${p.german==="DSH"?"DSH-2":p.german}</span>`,
+      p.gre==="req"?`<span class="tag no">GRE required</span>`:`<span class="tag ok">No GRE</span>`,
+      p.start==="summer"?`<span class="tag ok">Summer start</span>`:p.start==="both"?`<span class="tag ok">Winter+Summer</span>`:`<span class="tag no">Winter only</span>`,
+      p.tuition===0?`<span class="tag ok">€0 tuition</span>`:p.tuition===-1?`<span class="tag warn">Fees unverified</span>`:`<span class="tag warn">€${p.tuition.toLocaleString("en")}/sem</span>`,
+      `<span class="tag">${RN[p.nc]||p.nc}</span>`,
+      `<span class="tag">${REG[p.region]}</span>`,
+      p.vpd==="none"?`<span class="tag">Direct — no VPD</span>`:p.vpd==="yes"?`<span class="tag warn">VPD needed</span>`:""
+    ].filter(Boolean).join("");
+    const vlab={g:"Fits",a:"Check first",r:"Blocked"}[e.verdict];
+    return`
+    <article class="prog card v${e.verdict}">
+      <div class="stripe"></div>
+      <div class="row">
+        <div class="main">
+          <div class="uni">${p.uni}</div>
+          <div class="progt">${p.prog} <span class="deg">${p.deg}</span></div>
+          <div class="loc">${p.campus}</div>
+          <div class="tags">${chips}</div>
+        </div>
+        <div class="aside">
+          <span class="vpill">${vlab}</span>
+          ${e.verdict==="r"?`<div class="fails">${e.fails.join(" · ")}</div>`:""}
+          <div class="dl">${dl(p)}</div>
+          <button class="tick${M.ids.includes(p.id)?" on":""}" data-id="${p.id}" aria-pressed="${M.ids.includes(p.id)}">${M.ids.includes(p.id)?"★ On shortlist":"☆ Shortlist"}</button>
+        </div>
+        <details class="det-wrap">
+          <summary class="more">Details</summary>
+          <div class="detgrid">
+            <div class="det"><h4>From the official page</h4><p class="q">${p.quote}</p></div>
+            ${e.conds.length?`<div class="det"><h4>Verify before applying</h4><ul>${e.conds.map(c=>`<li>${c}</li>`).join("")}</ul></div>`:`<div class="det"><h4>Open conditions</h4><p style="color:var(--g);font-weight:600">None — this passes every hard filter on your profile as researched.</p></div>`}
+            ${e.notes.length?`<div class="det"><h4>Worth knowing</h4><ul>${e.notes.map(c=>`<li>${c}</li>`).join("")}</ul></div>`:""}
+            <div class="det"><h4>Route</h4><p>${{direct:"Direct to university",uniassist:"uni-assist",portal:"University portal",eduapp:"EduApplication (Chemnitz)",rwthonline:"RWTHonline"}[p.route]} · VPD: ${{none:"not needed",yes:"required",unverified:"unverified"}[p.vpd]||"—"}</p></div>
+            <div class="det"><h4>Source</h4><p><a href="${p.url}" target="_blank" rel="noopener">Open official programme page ↗</a></p></div>
+            <div class="det notewrap"><h4>Your remark</h4><textarea class="note" data-id="${p.id}" placeholder="e.g. emailed admissions 2 Oct — asked whether the SoSe intake runs; follow up 20 Oct" aria-label="Remark for ${esc(p.uni+" "+p.prog)}">${esc(M.notes[p.id]||"")}</textarea></div>
+          </div>
+        </details>
+      </div>
+    </article>`;
+  }).join("")||(S.tab==="short"
+    ?`<div class="card empty">Nothing shortlisted yet — tap <b>☆ Shortlist</b> on any programme and it waits for you here, with a remark field on each card. Saved in this browser.</div>`
+    :`<div class="card" style="padding:24px;text-align:center;color:var(--mut)">No programmes match this filter set. Try raising your IELTS value, enabling MOI, or “Show blocked” to see why each option fails.</div>`);
+}
+render();
+</script>
