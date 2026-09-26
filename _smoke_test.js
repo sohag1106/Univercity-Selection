@@ -49,7 +49,8 @@ globalThis.__probe = () => {
   ["passau-cs","passau-aie","do-ds","muen-ds","mann-wi","fuas-it","thi-ai","hfu-aim",
    "thws-ai","lue-ras","aug-ds","oth-aw","sie-hci","haw-ice","albsig-iai",
    "wue-cs","ulm-cit","thu-is","pot-cs","fau-ds","fau-at","osn-cogsci",
-   "harz-tim","hawkiel-cs","hhu-aids"].forEach(id => {
+   "harz-tim","hawkiel-cs","hhu-aids",
+   "lue-its","anhalt-mme","fuas-his","heis-aai","heis-se"].forEach(id => {
     const r = ev(id); V[id] = { v: r.verdict, fails: r.fails.slice(), gateFail: r.gates.filter(g=>!g.ok).map(g=>g.label) };
   });
 
@@ -151,6 +152,18 @@ ok(r.V["harz-tim"].v !== "r", "Harz TIM → not blocked (new viable from list sw
 ok(r.V["hawkiel-cs"].v === "r" && r.V["hawkiel-cs"].fails.includes("GRE required"),
    "HAW Kiel CS → BLOCKED on GRE", r.V["hawkiel-cs"]);
 ok(r.V["hhu-aids"].v === "r", "HHU AI & Data Science → blocked (winter-only + 30-ECTS maths gate)", r.V["hhu-aids"]);
+
+console.log("\n[list sweep part 2]");
+ok(r.V["lue-its"].v !== "r" && r.V["lue-its"].gateFail.length === 0,
+   "Lübeck IT Security → not blocked, 60-CP basic-CS gate passes", r.V["lue-its"]);
+ok(r.V["anhalt-mme"].v === "r" && r.V["anhalt-mme"].fails.some(f => /Needs grade/.test(f)),
+   "Anhalt Media Engineering → BLOCKED on grade 2.0 cut-off", r.V["anhalt-mme"]);
+ok(r.V["fuas-his"].v === "r" && r.V["fuas-his"].fails.some(f => /summer|grade/.test(f)),
+   "Frankfurt High Integrity Systems → BLOCKED (winter-only + 1.8 floor)", r.V["fuas-his"]);
+ok(r.V["heis-aai"].v === "r" && r.V["heis-aai"].fails.some(f => /IELTS 6\.0/.test(f)),
+   "Heilbronn Applied AI → BLOCKED on IELTS 6.0", r.V["heis-aai"]);
+ok(r.V["heis-se"].v === "r" && r.V["heis-se"].fails.some(f => /IELTS 6\.0/.test(f)),
+   "Heilbronn SE → BLOCKED on IELTS 6.0 (and no longer conflates Applied AI)", r.V["heis-se"]);
 
 console.log("\n[MOI-first / MOI-only]");
 ok(r.nSort > 0 && r.nOnly <= r.nSort, `moiOnly filters ${r.nSort} → ${r.nOnly} cards`);
