@@ -87,19 +87,22 @@ globalThis.__probe = () => {
 
   Object.assign(S, base); render();
 
-  // shortlist seed: the 11 ✅-fits must arrive on a fresh browser
+  // shortlist seed: the 12 ✅-fits + sweep adds must arrive on a fresh browser
   const shortCnt = document.getElementById("shortCnt").textContent;
   S.tab = "short"; render();
   const nShort = (document.getElementById("list").innerHTML.match(/<article /g) || []).length;
   const shortMissing = REC.filter(id => !M.ids.includes(id));
-  const recPersisted = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return o && o.recV === 2 && Array.isArray(o.ids); } catch (e) { return false; } })();
+  const recPersisted = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return o && o.recV === 3 && Array.isArray(o.ids); } catch (e) { return false; } })();
   const seededNote = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["lue-ras"]) || ""; } catch (e) { return ""; } })();
+  const seededNoteIts = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["lue-its"]) || ""; } catch (e) { return ""; } })();
+  const seededNoteHarz = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["harz-tim"]) || ""; } catch (e) { return ""; } })();
   S.tab = "all"; render();
 
   return { n: P.length, dupes, V, orderNoSort, orderSort, moiRankTxt,
            nNoSort, nSort, nOnly, onlyBad, stats, hint, xssEscaped,
            dlLue: dl(P.find(p => p.id === "lue-ras")),
-           shortCnt, nShort, shortMissing, recPersisted, seededNote };
+           shortCnt, nShort, shortMissing, recPersisted, seededNote,
+           seededNoteIts, seededNoteHarz };
 };
 `, ctx);
 
@@ -174,12 +177,16 @@ ok(r.moiRankTxt(r.orderSort) <= r.moiRankTxt(r.orderNoSort),
 ok(r.stats.includes("MOI-accepted"), "stats line shows MOI-accepted count");
 ok(r.hint.includes("234 ECTS"), "ECTS hint shows transcript totals");
 
-console.log("\n[shortlist seed — 11 fits + Lübeck]");
-ok(Number(r.shortCnt) === 12, `header shortlist counter = ${r.shortCnt}`, r.shortCnt);
-ok(r.nShort === 12, `shortlist tab renders ${r.nShort} cards`, r.nShort);
+console.log("\n[shortlist seed — 12 fits + Lübeck×2 + Harz]");
+ok(Number(r.shortCnt) === 14, `header shortlist counter = ${r.shortCnt}`, r.shortCnt);
+ok(r.nShort === 14, `shortlist tab renders ${r.nShort} cards`, r.nShort);
 ok(r.shortMissing.length === 0, "every REC id landed in M.ids", r.shortMissing);
-ok(r.recPersisted === true, "seed persisted with recV=2 (future unticks stick)");
-ok(r.seededNote.includes("Prüfungsausschuss"), "Lübeck remark pre-filled with the 32-ECTS question", r.seededNote);
+ok(r.recPersisted === true, "seed persisted with recV=3 (future unticks stick)");
+ok(r.seededNote.includes("Prüfungsausschuss"), "Lübeck RAS remark pre-filled with the 32-ECTS question", r.seededNote);
+ok(r.seededNoteIts.includes("12 CP security") && r.seededNoteIts.includes("15 Oct 2026"),
+   "Lübeck IT-Security remark pre-filled (gates + window)", r.seededNoteIts);
+ok(r.seededNoteHarz.includes("15 Dec 2026") && r.seededNoteHarz.includes("professional experience"),
+   "Harz TIM remark pre-filled (deadline + experience check)", r.seededNoteHarz);
 
 console.log("\n[safety]");
 ok(r.xssEscaped === true, "hostile remark renders escaped");
