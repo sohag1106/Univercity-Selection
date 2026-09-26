@@ -370,8 +370,12 @@ let S=Object.assign({},DEF);
 try{const j=localStorage.getItem("ssf-v1");if(j)Object.assign(S,JSON.parse(j));}catch(e){}
 function save(){try{localStorage.setItem("ssf-v1",JSON.stringify(S));}catch(e){}}
 /* shortlist + remarks: separate key, survives profile/filter edits */
-let M={ids:[],notes:{}};
-try{const j=localStorage.getItem("ssf-marks-v1");if(j){const o=JSON.parse(j);if(o&&Array.isArray(o.ids))M.ids=o.ids;if(o&&o.notes&&typeof o.notes==="object")M.notes=o.notes;}}catch(e){}
+let M={ids:[],notes:{},recV:0};
+try{const j=localStorage.getItem("ssf-marks-v1");if(j){const o=JSON.parse(j);if(o&&Array.isArray(o.ids))M.ids=o.ids;if(o&&o.notes&&typeof o.notes==="object")M.notes=o.notes;if(o&&typeof o.recV==="number")M.recV=o.recV;}}catch(e){}
+/* one-time seed: the ✅ "fits" from the 26 Sep 2026 transcript audit are added to
+   the shortlist automatically; recV gates it so unticking later sticks */
+const REC_V=1,REC=["do-ds","passau-cs","muen-ds","fuas-it","thi-ai","hfu-aim","thws-ai","wue-cs","thu-is","osn-cogsci","sie-hci"];
+if(M.recV<REC_V){REC.forEach(id=>{if(P.some(p=>p.id===id)&&!M.ids.includes(id))M.ids.push(id);});M.recV=REC_V;saveMarks();}
 function saveMarks(){try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}}
 
 const $=id=>document.getElementById(id);
