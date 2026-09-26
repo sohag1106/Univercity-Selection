@@ -373,9 +373,16 @@ function save(){try{localStorage.setItem("ssf-v1",JSON.stringify(S));}catch(e){}
 let M={ids:[],notes:{},recV:0};
 try{const j=localStorage.getItem("ssf-marks-v1");if(j){const o=JSON.parse(j);if(o&&Array.isArray(o.ids))M.ids=o.ids;if(o&&o.notes&&typeof o.notes==="object")M.notes=o.notes;if(o&&typeof o.recV==="number")M.recV=o.recV;}}catch(e){}
 /* one-time seed: the ✅ "fits" from the 26 Sep 2026 transcript audit are added to
-   the shortlist automatically; recV gates it so unticking later sticks */
-const REC_V=1,REC=["do-ds","passau-cs","muen-ds","fuas-it","thi-ai","hfu-aim","thws-ai","wue-cs","thu-is","osn-cogsci","sie-hci"];
-if(M.recV<REC_V){REC.forEach(id=>{if(P.some(p=>p.id===id)&&!M.ids.includes(id))M.ids.push(id);});M.recV=REC_V;saveMarks();}
+   the shortlist automatically; recV gates it so unticking later sticks.
+   v2 adds Lübeck RAS (⚠️ borderline on maths) with a pre-filled question remark. */
+const REC_V=2,REC=["do-ds","passau-cs","muen-ds","fuas-it","thi-ai","hfu-aim","thws-ai","wue-cs","thu-is","osn-cogsci","sie-hci","lue-ras"];
+const REC_NOTES={};
+REC_NOTES["lue-ras"]="Ask Prüfungsausschuss: do Statistics (4.5) / Numerical Methods count toward §3's 32 maths credits? I count 30–34.5. Window closes 15 Oct 2026 — ask NOW.";
+if(M.recV<REC_V){
+  REC.forEach(id=>{if(P.some(p=>p.id===id)&&!M.ids.includes(id))M.ids.push(id);});
+  Object.keys(REC_NOTES).forEach(id=>{if(!(id in M.notes))M.notes[id]=REC_NOTES[id];});
+  M.recV=REC_V;saveMarks();
+}
 function saveMarks(){try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}}
 
 const $=id=>document.getElementById(id);
