@@ -48,7 +48,8 @@ globalThis.__probe = () => {
   const V = {};
   ["passau-cs","passau-aie","do-ds","muen-ds","mann-wi","fuas-it","thi-ai","hfu-aim",
    "thws-ai","lue-ras","aug-ds","oth-aw","sie-hci","haw-ice","albsig-iai",
-   "wue-cs","ulm-cit","thu-is","pot-cs","fau-ds","fau-at","osn-cogsci"].forEach(id => {
+   "wue-cs","ulm-cit","thu-is","pot-cs","fau-ds","fau-at","osn-cogsci",
+   "harz-tim","hawkiel-cs","hhu-aids"].forEach(id => {
     const r = ev(id); V[id] = { v: r.verdict, fails: r.fails.slice(), gateFail: r.gates.filter(g=>!g.ok).map(g=>g.label) };
   });
 
@@ -146,6 +147,10 @@ ok(r.V["pot-cs"].v === "r" && r.V["pot-cs"].fails.includes("GRE required"),
 ok(r.V["fau-ds"].v !== "r" && r.V["fau-at"].v !== "r", "FAU DS + Autonomy → not blocked", r.V["fau-ds"]);
 ok(r.V["osn-cogsci"].v !== "r" && r.V["osn-cogsci"].gateFail.length === 0,
    "Osnabrück Cognitive Science → not blocked, 180 gate passes", r.V["osn-cogsci"]);
+ok(r.V["harz-tim"].v !== "r", "Harz TIM → not blocked (new viable from list sweep)", r.V["harz-tim"]);
+ok(r.V["hawkiel-cs"].v === "r" && r.V["hawkiel-cs"].fails.includes("GRE required"),
+   "HAW Kiel CS → BLOCKED on GRE", r.V["hawkiel-cs"]);
+ok(r.V["hhu-aids"].v === "r", "HHU AI & Data Science → blocked (winter-only + 30-ECTS maths gate)", r.V["hhu-aids"]);
 
 console.log("\n[MOI-first / MOI-only]");
 ok(r.nSort > 0 && r.nOnly <= r.nSort, `moiOnly filters ${r.nSort} → ${r.nOnly} cards`);
