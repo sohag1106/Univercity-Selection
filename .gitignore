@@ -7,3 +7,5 @@ passau_vpd_check.png
 # stray search dumps from research sessions
 search*.html
 bing*.html
+_drive*.js
+_patch*.py
