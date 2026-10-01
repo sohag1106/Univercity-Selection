@@ -1,0 +1,9 @@
+# headless-driving artifacts
+_drive.js
+dev_screenshot.png
+passau_vpd_check.png
+*.png
+
+# stray search dumps from research sessions
+search*.html
+bing*.html
