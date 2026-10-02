@@ -1,4 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef2f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1319">
+<meta name="description" content="English-taught CS/AI/DS master's in Germany with summer-semester starts, filtered to your IELTS + MOI profile.">
 <title>Sommersemester Finder</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -37,6 +45,7 @@ body{
   background:var(--bg); color:var(--ink);
   font-size:14.5px; line-height:1.5;
   padding-inline:18px;
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
 }
 .mono{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
@@ -165,12 +174,61 @@ textarea.note{width:100%;border:1px solid var(--line);border-radius:8px;backgrou
 textarea.note:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
 .empty{padding:26px 20px;text-align:center;color:var(--mut)}
 
+/* ---------- tablet (≤900px): breathe, keep two-column detail grid ---------- */
+@media (max-width:900px){
+  body{padding-inline:12px}
+  header{margin-inline:-12px;padding-inline:12px}
+  .hd .stats{margin-left:auto}
+  /* 16px minimum on inputs/selects: below that iOS Safari auto-zooms the
+     page on focus, and the app stays zoomed afterwards. #authbar wins the
+     cascade over the later .authbar base rule. */
+  select,input[type="search"],#authbar input,textarea.note{font-size:16px}
+}
+
+/* ---------- phone (≤760px): single column, thumb-sized controls ---------- */
 @media (max-width:760px){
-  .row{padding-right:16px}
+  html{font-size:15px}
+  .hd h1{font-size:18px}
+  .hd .sub{font-size:12px;max-width:none}
+  .hd .stats{margin-left:0;text-align:left;width:100%;font-size:11.5px}
+  main{padding-block:14px 48px}
+  #controls{padding:14px 14px 12px}
+  .crow{gap:14px 16px}
+  .grp{flex:1 1 calc(50% - 16px)}
+  .grp:last-child{flex:1 1 100%}
+  input[type="search"]{width:100%}
+  select{padding:9px 30px 9px 10px}
+  /* long option labels ("Niedersachsen · Bremen · …") give these selects a
+     min-content width wider than a phone: let each control row go full width
+     and let the select shrink + ellipsis instead of overflowing the page */
+  .switchrow>.sw{flex:1 1 100%;min-width:0}
+  .sw>select{flex:1 1 auto;min-width:0;max-width:100%;text-overflow:ellipsis}
+  input[type="search"]{padding:10px 12px}
+  .chip-btn{padding:9px 14px}
+  .sw{padding:8px 4px;min-height:40px}
+  .switchrow{gap:10px 16px}
+  .row{padding:14px 14px 12px 20px}
   .aside{flex:1 1 100%;flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px;text-align:left;justify-content:space-between}
   .detgrid{grid-template-columns:1fr}
-  .hd .stats{margin-left:0;text-align:left;width:100%}
-  input[type="search"]{width:100%}
+  .tab{padding:10px 16px}
+  .tick,.astat{padding:8px 12px;min-height:38px}
+  .stf{padding:8px 14px;min-height:38px}
+  textarea.note{font-size:16px}
+  .authbar{padding:12px}
+  #authForm{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+  #authForm input[type=tel]{flex:1 1 140px;width:auto;min-width:0}
+  #authForm .pinput{flex:0 0 auto}
+  #authBtn{flex:1 1 100%;min-height:44px}
+  .authbar button{min-height:42px}
+  footer{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+}
+
+/* ---------- small phone (≤430px): everything full width ---------- */
+@media (max-width:430px){
+  .grp{flex:1 1 100%}
+  .hd .logo{width:32px;height:32px;font-size:11px;border-radius:8px}
+  .tabs{gap:6px}
+  .tab{flex:1 1 auto;text-align:center}
 }
 
 /* ---------- footer ---------- */
@@ -199,9 +257,10 @@ footer b{color:var(--ink)}
 .authbar .who{color:var(--mut)}
 .authbar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:5px;vertical-align:1px}
 .authbar .dot.off{background:var(--a)}
-.authmsg{color:var(--r);font-size:12px}
-@media (max-width:640px){.authbar input[type=tel]{width:120px}}
+.authmsg{color:var(--r);font-size:12px;flex:1 1 100%}
 </style>
+</head>
+<body>
 
 <header>
   <div class="hd">
@@ -752,3 +811,5 @@ function render(){
 
 render();
 </script>
+</body>
+</html>

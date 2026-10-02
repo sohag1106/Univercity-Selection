@@ -20,3 +20,5 @@ package-lock.json
 # wrangler local state / deploy staging (public/ must be regenerated before each deploy)
 .wrangler/
 public/
+_responsive_check.js
+resp_*.png
