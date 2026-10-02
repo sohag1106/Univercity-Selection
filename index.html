@@ -725,14 +725,16 @@ function render(){
     if(!/^\d{4}$/.test(pin))return msg("The PIN must be 4 digits.");
     const btn=$("authBtn");if(btn)btn.disabled=true;
     fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({phone:p,pin:pin})})
-      .then(r=>r.json().then(j=>({s:r.status,j:j||{}})))
-      .then(o=>{
-        if(o.s!==200||!o.j.token){msg(o.j.error||"Could not sign in.");return;}
-        setAuth(o.j.token,o.j.phone);
-        msg(o.j.created?"Account created for this number — ticking a programme now saves it to the cloud.":"Welcome back.");
+      .then(r=>r.text().then(t=>{
+        let j=null;try{j=JSON.parse(t);}catch(e){}
+        if(!j){/* not our API — a static host (GitHub Pages) answered instead */
+          msg("This copy of the app has no sign-in server. Open it at http://localhost:8321 (run `node server.js`), not the GitHub Pages URL.");return;}
+        if(r.status!==200||!j.token){msg(j.error||"Could not sign in.");return;}
+        setAuth(j.token,j.phone);
+        msg(j.created?"Account created for this number — ticking a programme now saves it to the cloud.":"Welcome back.");
         return pull(true);
-      })
-      .catch(()=>msg("Server unreachable."))
+      }))
+      .catch(()=>msg("Can't reach the sign-in server — is `node server.js` running, and are you on http://localhost:8321?"))
       .then(()=>{if(btn)btn.disabled=false;});
   }
   if(live){
