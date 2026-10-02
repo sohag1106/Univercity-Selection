@@ -1,0 +1,15 @@
+# Cloudflare Workers — Sommersemester Finder (static assets + /api Worker).
+# Secrets (never committed, never in this file):
+#   npx wrangler secret put DATABASE_URL     → paste the Neon connection string
+# Deploy:  npx wrangler deploy               → https://sommersemester-finder.<acct>.workers.dev
+name = "sommersemester-finder"
+main = "worker/index.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+# `public/` holds ONLY the app files to upload — built by `node cf-build.js`
+# (npm run cf:dev / cf:deploy run it automatically). Pointing this at "." made
+# wrangler scan node_modules and hang.
+directory = "public"
+binding = "ASSETS"
+# not_found_handling = "single-page-application"  # enable if routes are added

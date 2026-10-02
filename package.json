@@ -5,9 +5,16 @@
   "description": "Static tracker app + phone/PIN login and cloud sync (Neon). DATABASE_URL lives in gitignored .env.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "cf:build": "node cf-build.js",
+    "cf:dev": "node cf-build.js && wrangler dev --port 8787 --ip 127.0.0.1",
+    "cf:deploy": "node cf-build.js && wrangler deploy"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.146.0"
   }
 }

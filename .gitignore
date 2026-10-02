@@ -13,5 +13,10 @@ _patch*.py
 # secrets & deps — NEVER commit
 .env
 .env.*
+.dev.vars
 node_modules/
 package-lock.json
+
+# wrangler local state / deploy staging (public/ must be regenerated before each deploy)
+.wrangler/
+public/

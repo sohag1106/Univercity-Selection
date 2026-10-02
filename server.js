@@ -1,7 +1,8 @@
 /* Sommersemester Finder — login + cloud-sync server (phone + 4-digit PIN).
    - One endpoint /api/auth does create-or-login: an unknown phone + any 4-digit
      PIN creates the account; a known phone verifies the PIN (5 wrong tries =>
-     15-minute lock). PINs are stored ONLY as salted scrypt hashes.
+     15-minute lock). PINs are stored ONLY as salted hashes (PBKDF2-SHA256;
+     legacy scrypt rows are upgraded on a correct sign-in, see handleAuth).
    - Per-phone shortlist/remarks/status live in Neon (tables users/marks/sessions).
    - DATABASE_URL lives in .env, which is gitignored — it is never sent to the
      browser and never committed.
@@ -51,12 +52,19 @@ const readBody = req => new Promise((resolve, reject) => {
 const cleanPhone = p => String(p || "").replace(/\D/g, "");
 const validPin = p => /^\d{4}$/.test(String(p || ""));
 const makeSalt = () => crypto.randomBytes(16).toString("hex");
-const hashPin = (pin, salt) => crypto.scryptSync(String(pin), Buffer.from(salt, "hex"), 32).toString("hex");
-const pinOk = (pin, salt, stored) => {
-  const a = Buffer.from(hashPin(pin, salt), "hex");
+const PBKDF2_ITER = 150000; // must match worker/index.js
+const hashScrypt = (pin, salt) => crypto.scryptSync(String(pin), Buffer.from(salt, "hex"), 32).toString("hex");
+const hashPbkdf2 = (pin, salt) => crypto.pbkdf2Sync(String(pin), Buffer.from(salt, "hex"), PBKDF2_ITER, 32, "sha256").toString("hex");
+/* new accounts use pbkdf2 (the Cloudflare Worker can verify it; it has no
+   scrypt). Legacy 'scrypt' rows are verified with scrypt and upgraded on the
+   next successful login — see handleAuth. */
+const hashPin = (pin, salt) => hashPbkdf2(pin, salt);
+function pinOk(pin, salt, stored, scheme) {
+  const want = scheme === "scrypt" ? hashScrypt(pin, salt) : hashPbkdf2(pin, salt);
+  const a = Buffer.from(want, "hex");
   const b = Buffer.from(String(stored || ""), "hex");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
-};
+}
 const newToken = () => crypto.randomBytes(24).toString("hex");
 
 async function createSession(phone) {
@@ -81,12 +89,12 @@ async function handleAuth(res, body) {
   if (!validPin(pin)) return send(res, 400, { error: "The PIN must be exactly 4 digits." });
 
   const u = await pool.query(
-    "SELECT pin_salt, pin_hash, failed_count, locked_until FROM users WHERE phone = $1", [phone]);
+    "SELECT pin_salt, pin_hash, COALESCE(pin_scheme,'scrypt') AS pin_scheme, failed_count, locked_until FROM users WHERE phone = $1", [phone]);
 
   if (u.rowCount === 0) { // create-or-login: new number => new account
     const salt = makeSalt();
     try {
-      await pool.query("INSERT INTO users (phone, pin_salt, pin_hash) VALUES ($1, $2, $3)",
+      await pool.query("INSERT INTO users (phone, pin_salt, pin_hash, pin_scheme) VALUES ($1, $2, $3, 'pbkdf2')",
         [phone, salt, hashPin(pin, salt)]);
     } catch (e) { if (e.code !== "23505") throw e; } // race: second insert loses, falls through to verify
     const token = await createSession(phone);
@@ -98,7 +106,7 @@ async function handleAuth(res, body) {
     const mins = Math.max(1, Math.ceil((new Date(row.locked_until) - Date.now()) / 60000));
     return send(res, 429, { error: `Too many attempts — try again in ${mins} min.` });
   }
-  if (!pinOk(pin, row.pin_salt, row.pin_hash)) {
+  if (!pinOk(pin, row.pin_salt, row.pin_hash, row.pin_scheme)) {
     const fails = (row.failed_count || 0) + 1;
     /* the $N::int casts are required: in `CASE WHEN $2 >= $3` Postgres cannot
        infer the type of two bare parameters and the whole statement errors,
@@ -112,6 +120,14 @@ async function handleAuth(res, body) {
       : `Wrong PIN (${MAX_FAILS - fails} ${MAX_FAILS - fails === 1 ? "try" : "tries"} left).` });
   }
   await pool.query("UPDATE users SET failed_count = 0, locked_until = NULL WHERE phone = $1", [phone]);
+  if (row.pin_scheme === "scrypt") {
+    /* correct PIN proves we know it — rewrite as pbkdf2 so the Cloudflare
+       Worker (no scrypt in WebCrypto) can verify this account too */
+    const salt = makeSalt();
+    await pool.query("UPDATE users SET pin_salt = $2, pin_hash = $3, pin_scheme = 'pbkdf2' WHERE phone = $1",
+      [phone, salt, hashPbkdf2(pin, salt)]);
+    console.log(`upgraded ${phone} from scrypt to pbkdf2`);
+  }
   const token = await createSession(phone);
   return send(res, 200, { token, phone, created: false });
 }

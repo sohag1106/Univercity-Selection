@@ -1,0 +1,19 @@
+# Files that must NEVER be uploaded as Cloudflare static assets.
+# (wrangler reads this when deploying the [assets] directory)
+.env
+.env.*
+.dev.vars
+node_modules/
+worker/
+server.js
+render.yaml
+wrangler.toml
+wrangler.jsonc
+package.json
+package-lock.json
+.gitignore
+_smoke_test.js
+_seed.js
+_migrate_pin.js
+*.png
+git/
