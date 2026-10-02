@@ -189,6 +189,18 @@ footer b{color:var(--ink)}
 .stfrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .stf{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:700;color:var(--mut);background:var(--panel);cursor:pointer}
 .stf[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+/* ---- cloud account (phone + 4-digit PIN) ---- */
+.authbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:13px}
+.authbar input{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
+.authbar input[type=tel]{width:150px}
+.authbar input.pinput{width:88px;letter-spacing:.4em}
+.authbar button{padding:7px 14px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
+.authbar button.ghost{background:none;color:var(--acc)}
+.authbar .who{color:var(--mut)}
+.authbar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:5px;vertical-align:1px}
+.authbar .dot.off{background:var(--a)}
+.authmsg{color:var(--r);font-size:12px}
+@media (max-width:640px){.authbar input[type=tel]{width:120px}}
 </style>
 
 <header>
@@ -261,6 +273,20 @@ footer b{color:var(--ink)}
     <div class="hint" id="profileHint"></div>
     <div class="hint" id="ectsHint" style="border-top:1px dashed var(--line);padding-top:10px"></div>
   </section>
+
+  <div class="authbar" id="authbar">
+    <span id="authForm">
+      <label for="authPhone" style="color:var(--mut)">Phone</label>
+      <input type="tel" id="authPhone" inputmode="numeric" autocomplete="tel" placeholder="01635…" maxlength="15">
+      <label for="authPin" style="color:var(--mut)">PIN</label>
+      <input type="password" class="pinput" id="authPin" inputmode="numeric" autocomplete="one-time-code" placeholder="••••" maxlength="4">
+      <button id="authBtn" type="button">Sign in / create</button>
+    </span>
+    <span id="authWho" hidden><i class="dot" id="authDot"></i><b id="authPhoneShown"></b></span>
+    <button class="ghost" id="authOutBtn" type="button" hidden>Sign out</button>
+    <button class="ghost" id="authPullBtn" type="button" hidden>Pull latest</button>
+    <span class="authmsg" id="authMsg"></span>
+  </div>
 
   <nav class="tabs" aria-label="View">
     <button class="tab" id="tabAll" role="tab" aria-selected="true">Finder</button>
@@ -397,6 +423,11 @@ function save(){try{localStorage.setItem("ssf-v1",JSON.stringify(S));}catch(e){}
 /* shortlist + remarks: separate key, survives profile/filter edits */
 let M={ids:[],notes:{},status:{},recV:0};
 try{const j=localStorage.getItem("ssf-marks-v1");if(j){const o=JSON.parse(j);if(o&&Array.isArray(o.ids))M.ids=o.ids;if(o&&o.notes&&typeof o.notes==="object")M.notes=o.notes;if(o&&typeof o.recV==="number")M.recV=o.recV;if(o&&o.status&&typeof o.status==="object")M.status=o.status;}}catch(e){}
+/* saveMarks writes to this browser, then (once a phone/PIN session is active)
+   schedules a cloud upload. queuePush stays a no-op until the sync block at the
+   bottom of this script replaces it, so opening the file offline changes nothing. */
+let queuePush=function(){};
+function saveMarks(){try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}try{queuePush();}catch(e){}}
 /* one-time seed: the ✅ "fits" from the 26 Sep 2026 transcript audit are added to
    the shortlist automatically; recV gates it so unticking later sticks.
    v2 adds Lübeck RAS (⚠️ borderline on maths) with a pre-filled question remark. */
@@ -410,7 +441,6 @@ if(M.recV<REC_V){
   Object.keys(REC_NOTES).forEach(id=>{if(!(id in M.notes))M.notes[id]=REC_NOTES[id];});
   M.recV=REC_V;saveMarks();
 }
-function saveMarks(){try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}}
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -632,5 +662,91 @@ function render(){
     ?`<div class="card empty">Nothing shortlisted yet — tap <b>☆ Shortlist</b> on any programme and it waits for you here, with a remark field on each card. Saved in this browser.</div>`
     :`<div class="card" style="padding:24px;text-align:center;color:var(--mut)">No programmes match this filter set. Try raising your IELTS value, enabling MOI, or “Show blocked” to see why each option fails.</div>`);
 }
+/* ---------- account sync (phone + 4-digit PIN → Neon) ----------
+   Runs only when the app is served over http(s) by server.js. Opened as a plain
+   file, or loaded by _smoke_test.js, everything below switches itself off and
+   the app stays a local browser-only tracker. The browser never sees the
+   database: only the phone number, the PIN (sent once, to our own server), and
+   an opaque session token kept under ssf-auth-v1. */
+(function(){
+  const live=typeof fetch==="function"&&typeof location==="object"&&/^https?:$/.test(String(location.protocol||""));
+  let token="",phone="",pushT=null,lastPush="";
+  try{const j=localStorage.getItem("ssf-auth-v1");if(j){const o=JSON.parse(j);token=String(o.token||"");phone=String(o.phone||"");}}catch(e){}
+  const digits=p=>String(p||"").replace(/\D/g,"");
+  const tstamp=()=>new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  function msg(t){const n=$("authMsg");if(n)n.textContent=t||"";}
+  function ui(){
+    const ab=$("authbar");
+    if(!ab)return;
+    if(!live){ab.innerHTML='<span style="color:var(--mut)">Cloud sign-in needs the app served by <b>node server.js</b> (http://localhost:8321). Opened like this, your shortlist saves in <b>this browser only</b>.</span>';return;}
+    const on=!!(token&&phone);
+    const form=$("authForm"),who=$("authWho"),out=$("authOutBtn"),pull=$("authPullBtn");
+    if(form)form.hidden=on;
+    if(who)who.hidden=!on;
+    if(out)out.hidden=!on;
+    if(pull)pull.hidden=!on;
+    const ps=$("authPhoneShown");if(ps)ps.textContent=on?phone:"";
+    const d=$("authDot");if(d)d.className=on&&lastPush?"dot":"dot off";
+  }
+  function setAuth(t,p){token=t||"";phone=p||"";
+    try{if(t)localStorage.setItem("ssf-auth-v1",JSON.stringify({token:t,phone:p}));else localStorage.removeItem("ssf-auth-v1");}catch(e){}
+    ui();}
+  function api(path,method,body){
+    if(!token)return Promise.resolve(null);
+    return fetch(path,{method:method||"GET",headers:{"content-type":"application/json","x-auth-token":token},
+        body:body?JSON.stringify(body):undefined})
+      .then(r=>{
+        if(r.status===401){setAuth("","");msg("Session expired — sign in again.");return null;}
+        return r.ok?r.json():Promise.reject(new Error("HTTP "+r.status));
+      })
+      .catch(()=>{msg("Server unreachable — changes stay in this browser.");return null;});
+  }
+  function pushNow(){
+    return api("/api/marks","PUT",{data:M}).then(r=>{if(r&&r.ok)lastPush=tstamp();ui();});
+  }
+  function pull(silent){
+    return api("/api/marks","GET").then(r=>{
+      if(!r||!r.data){if(!silent)msg("No cloud list for this number yet — anything you tick now uploads automatically.");return;}
+      const d=r.data;
+      if(Array.isArray(d.ids))M.ids=d.ids;
+      if(d.notes&&typeof d.notes==="object")M.notes=d.notes;
+      if(d.status&&typeof d.status==="object")M.status=d.status;
+      if(typeof d.recV==="number")M.recV=Math.max(M.recV,d.recV);
+      /* write the local copy directly: a pull must not bounce straight back up */
+      try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}
+      render();lastPush=tstamp();
+      if(!silent)msg("Cloud list loaded — "+M.ids.length+" items.");
+    });
+  }
+  function signIn(){
+    msg("");
+    const p=digits(($("authPhone")||{}).value||""),pin=String(($("authPin")||{}).value||"");
+    if(!/^\d{6,15}$/.test(p))return msg("Enter the full phone number.");
+    if(!/^\d{4}$/.test(pin))return msg("The PIN must be 4 digits.");
+    const btn=$("authBtn");if(btn)btn.disabled=true;
+    fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({phone:p,pin:pin})})
+      .then(r=>r.json().then(j=>({s:r.status,j:j||{}})))
+      .then(o=>{
+        if(o.s!==200||!o.j.token){msg(o.j.error||"Could not sign in.");return;}
+        setAuth(o.j.token,o.j.phone);
+        msg(o.j.created?"Account created for this number — ticking a programme now saves it to the cloud.":"Welcome back.");
+        return pull(true);
+      })
+      .catch(()=>msg("Server unreachable."))
+      .then(()=>{if(btn)btn.disabled=false;});
+  }
+  if(live){
+    /* every edit schedules one upload ~1.2 s later, so typing a remark does not
+       send a request per keystroke */
+    queuePush=function(){if(!token)return;clearTimeout(pushT);pushT=setTimeout(pushNow,1200);};
+    const b=$("authBtn");if(b)b.addEventListener("click",signIn);
+    [$("authPhone"),$("authPin")].forEach(n=>{if(n)n.addEventListener("keydown",e=>{if(e.key==="Enter")signIn();});});
+    const o=$("authOutBtn");if(o)o.addEventListener("click",()=>{if(token)api("/api/logout","POST");setAuth("","");msg("Signed out. This browser keeps its local copy.");});
+    const pu=$("authPullBtn");if(pu)pu.addEventListener("click",()=>pull(false));
+    ui();
+    if(token)pull(true);
+  }else ui();
+})();
+
 render();
 </script>

@@ -1,0 +1,13 @@
+{
+  "name": "sommersemester-finder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static tracker app + phone/PIN login and cloud sync (Neon). DATABASE_URL lives in gitignored .env.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

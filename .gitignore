@@ -9,3 +9,9 @@ search*.html
 bing*.html
 _drive*.js
 _patch*.py
+
+# secrets & deps — NEVER commit
+.env
+.env.*
+node_modules/
+package-lock.json
