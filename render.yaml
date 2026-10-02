@@ -1,0 +1,17 @@
+# Render.com blueprint — free Web Service for the Sommersemester Finder.
+# The repo (sohag1106/Univercity-Selection) has the app AT ITS ROOT, so no rootDir.
+# After connecting the repo on Render, set ONE environment variable in the
+# dashboard (Variables tab):
+#   DATABASE_URL = your Neon connection string   (the value that lives in local .env)
+# Never put it in this file — this file is committed.
+services:
+  - type: web
+    name: sommersemester-finder
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

@@ -26,6 +26,9 @@ if (!process.env.DATABASE_URL) {
 }
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: true } });
 const PORT = parseInt(process.env.PORT || "8321", 10);
+/* locally we bind only to the loopback; on a PaaS (Render sets RENDER=true)
+   we must accept connections from its load balancer, which terminates HTTPS. */
+const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 
 const MAX_FAILS = 5;       // wrong-PIN tries before lock
 const LOCK_MINUTES = 15;   // lock duration
@@ -172,4 +175,4 @@ const server = http.createServer(async (req, res) => {
     try { send(res, 500, { error: "server error" }); } catch (_) { /* headers already sent */ }
   }
 });
-server.listen(PORT, "127.0.0.1", () => console.log(`Sommersemester Finder + sync API on http://localhost:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`Sommersemester Finder + sync API on http://localhost:${PORT} (bound to ${HOST})`));
