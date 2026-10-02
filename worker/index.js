@@ -1,9 +1,10 @@
 /* Cloudflare Worker: /api/* for the Sommersemester Finder.
    Serves the static app through the ASSETS binding and keeps per-phone
    shortlists in Neon over its HTTP driver (Workers cannot open TCP).
-   PINs: PBKDF2-SHA256, 150k iterations, per-user random salt — WebCrypto
-   has no scrypt, so rows created by the old Node server keep scheme
-   'scrypt'; server.js upgrades such a row to pbkdf2 the next time the
+   PINs: PBKDF2-SHA256, 100k iterations (Cloudflare's WebCrypto REJECTS any
+   count above 100000), per-user random salt. WebCrypto has no scrypt, so
+   legacy rows keep their scheme ('scrypt', or the first 'pbkdf2' which was
+   150k); server.js upgrades such a row to 100k 'pbkdf2' the next time the
    owner signs in locally with the right PIN (the Worker itself rejects
    those rows with 409 + a hint until then).
    DATABASE_URL is a wrangler secret, never a file in this repo. */
@@ -14,7 +15,9 @@ const LOCK_MINUTES = 15;    // lock duration
 const SESSION_DAYS = 30;    // login validity
 const BODY_LIMIT = 200000;  // ~200 KB per request
 const MARKS_LIMIT = 150000; // JSON size cap for a user's marks blob
-const PBKDF2_ITER = 150000;
+/* hard limit: Workers' crypto.subtle throws NotSupportedError for PBKDF2
+   iteration counts ABOVE 100000 — do not raise this. */
+const PBKDF2_ITER = 100000;
 
 /* ---------------- crypto helpers ---------------- */
 const hexToBuf = h => { const b = new Uint8Array(h.length / 2); for (let i = 0; i < b.length; i++) b[i] = parseInt(h.substr(i * 2, 2), 16); return b; };

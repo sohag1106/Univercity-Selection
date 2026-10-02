@@ -52,15 +52,20 @@ const readBody = req => new Promise((resolve, reject) => {
 const cleanPhone = p => String(p || "").replace(/\D/g, "");
 const validPin = p => /^\d{4}$/.test(String(p || ""));
 const makeSalt = () => crypto.randomBytes(16).toString("hex");
-const PBKDF2_ITER = 150000; // must match worker/index.js
+const PBKDF2_ITER = 100000; // must match worker/index.js — Cloudflare WebCrypto caps PBKDF2 at 100000
+const LEGACY_ITER = 150000; // what the first Worker build hashed with before the cap was known
 const hashScrypt = (pin, salt) => crypto.scryptSync(String(pin), Buffer.from(salt, "hex"), 32).toString("hex");
-const hashPbkdf2 = (pin, salt) => crypto.pbkdf2Sync(String(pin), Buffer.from(salt, "hex"), PBKDF2_ITER, 32, "sha256").toString("hex");
-/* new accounts use pbkdf2 (the Cloudflare Worker can verify it; it has no
-   scrypt). Legacy 'scrypt' rows are verified with scrypt and upgraded on the
-   next successful login — see handleAuth. */
+const hashAt = (pin, salt, it) => crypto.pbkdf2Sync(String(pin), Buffer.from(salt, "hex"), it, 32, "sha256").toString("hex");
+const hashPbkdf2 = (pin, salt) => hashAt(pin, salt, PBKDF2_ITER);
+/* new accounts use 'pbkdf2' (100k — the Cloudflare Worker can verify it; it
+   has no scrypt and caps iterations). Legacy rows — 'scrypt' or the early
+   'pbkdf2-150k' — are verified with their own scheme here and upgraded to
+   plain 'pbkdf2' on the next successful login; see handleAuth. */
 const hashPin = (pin, salt) => hashPbkdf2(pin, salt);
 function pinOk(pin, salt, stored, scheme) {
-  const want = scheme === "scrypt" ? hashScrypt(pin, salt) : hashPbkdf2(pin, salt);
+  const want = scheme === "scrypt" ? hashScrypt(pin, salt)
+    : scheme === "pbkdf2-150k" ? hashAt(pin, salt, LEGACY_ITER)
+    : hashPbkdf2(pin, salt);
   const a = Buffer.from(want, "hex");
   const b = Buffer.from(String(stored || ""), "hex");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
@@ -120,13 +125,13 @@ async function handleAuth(res, body) {
       : `Wrong PIN (${MAX_FAILS - fails} ${MAX_FAILS - fails === 1 ? "try" : "tries"} left).` });
   }
   await pool.query("UPDATE users SET failed_count = 0, locked_until = NULL WHERE phone = $1", [phone]);
-  if (row.pin_scheme === "scrypt") {
-    /* correct PIN proves we know it — rewrite as pbkdf2 so the Cloudflare
-       Worker (no scrypt in WebCrypto) can verify this account too */
+  if (row.pin_scheme !== "pbkdf2") {
+    /* correct PIN proves we know it — rewrite as 100k pbkdf2 so the Cloudflare
+       Worker (no scrypt, iterations capped at 100000) can verify this account */
     const salt = makeSalt();
     await pool.query("UPDATE users SET pin_salt = $2, pin_hash = $3, pin_scheme = 'pbkdf2' WHERE phone = $1",
       [phone, salt, hashPbkdf2(pin, salt)]);
-    console.log(`upgraded ${phone} from scrypt to pbkdf2`);
+    console.log(`upgraded ${phone} from ${row.pin_scheme} to pbkdf2/100k`);
   }
   const token = await createSession(phone);
   return send(res, 200, { token, phone, created: false });
