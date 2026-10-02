@@ -21,4 +21,5 @@ package-lock.json
 .wrangler/
 public/
 _responsive_check.js
+_gate_login_check.js
 resp_*.png

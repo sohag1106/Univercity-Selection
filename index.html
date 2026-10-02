@@ -215,10 +215,8 @@ textarea.note:focus{outline:2px solid var(--acc);outline-offset:-1px;border-colo
   .stf{padding:8px 14px;min-height:38px}
   textarea.note{font-size:16px}
   .authbar{padding:12px}
-  #authForm{display:flex;flex-wrap:wrap;gap:8px;width:100%}
-  #authForm input[type=tel]{flex:1 1 140px;width:auto;min-width:0}
-  #authForm .pinput{flex:0 0 auto}
-  #authBtn{flex:1 1 100%;min-height:44px}
+  .gate input,.gate button.enter{width:100%}
+  .gate .gcard{padding:22px 20px}
   .authbar button{min-height:42px}
   footer{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 }
@@ -257,10 +255,44 @@ footer b{color:var(--ink)}
 .authbar .who{color:var(--mut)}
 .authbar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:5px;vertical-align:1px}
 .authbar .dot.off{background:var(--a)}
-.authmsg{color:var(--r);font-size:12px;flex:1 1 100%}
+.authmsg{color:var(--mut);font-size:12px;flex:1 1 100%}
+.authmsg.err{color:var(--r)}
+.authmsg.ok{color:var(--g)}
+/* ---------- first screen: full-screen sign-in gate ---------- */
+.gate{position:fixed;inset:0;z-index:100;display:none;place-items:center;
+  padding:20px;background:var(--bg);overflow-y:auto}
+body.locked .gate{display:grid}
+body.locked{overflow:hidden}
+body.locked header,body.locked main,body.locked footer{display:none}
+.gate .gcard{width:100%;max-width:380px;padding:26px 24px;display:flex;flex-direction:column;gap:9px;text-align:left}
+.gate .logo{width:44px;height:44px;font-size:14px;margin-bottom:4px}
+.gate h2{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.gate .gsub{font-size:12.5px;color:var(--mut);line-height:1.55;margin-bottom:8px}
+.gate label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.gate input{padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);font-size:16px}
+.gate input:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
+.gate input.pinput{letter-spacing:.45em}
+.gate button.enter{margin-top:10px;padding:12px;border-radius:9px;background:var(--acc);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
+.gate .gmsg{font-size:12.5px;color:var(--r);min-height:1.3em;line-height:1.45}
+.gate .glocal{background:none;border:none;color:var(--mut);font-size:12px;text-decoration:underline;padding:4px 0;cursor:pointer}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="card gcard">
+    <div class="logo">SS</div>
+    <h2 id="gateTitle">Sommersemester Finder</h2>
+    <div class="gsub">Sign in with your phone number and a 4-digit PIN to open your shortlist. A number that has never signed in before gets a new account — the PIN becomes its password.</div>
+    <label for="authPhone">Phone</label>
+    <input type="tel" id="authPhone" inputmode="numeric" autocomplete="tel" placeholder="01635..." maxlength="15">
+    <label for="authPin" style="margin-top:4px">PIN</label>
+    <input type="password" class="pinput" id="authPin" inputmode="numeric" autocomplete="one-time-code" placeholder="••••" maxlength="4">
+    <button class="enter" id="authBtn" type="button">Sign in</button>
+    <div class="gmsg" id="authMsg" role="alert"></div>
+    <button class="glocal" id="gateLocal" type="button">Continue without cloud sync (this browser only)</button>
+  </div>
+</div>
 
 <header>
   <div class="hd">
@@ -333,18 +365,12 @@ footer b{color:var(--ink)}
     <div class="hint" id="ectsHint" style="border-top:1px dashed var(--line);padding-top:10px"></div>
   </section>
 
-  <div class="authbar" id="authbar">
-    <span id="authForm">
-      <label for="authPhone" style="color:var(--mut)">Phone</label>
-      <input type="tel" id="authPhone" inputmode="numeric" autocomplete="tel" placeholder="01635…" maxlength="15">
-      <label for="authPin" style="color:var(--mut)">PIN</label>
-      <input type="password" class="pinput" id="authPin" inputmode="numeric" autocomplete="one-time-code" placeholder="••••" maxlength="4">
-      <button id="authBtn" type="button">Sign in / create</button>
-    </span>
-    <span id="authWho" hidden><i class="dot" id="authDot"></i><b id="authPhoneShown"></b></span>
-    <button class="ghost" id="authOutBtn" type="button" hidden>Sign out</button>
-    <button class="ghost" id="authPullBtn" type="button" hidden>Pull latest</button>
-    <span class="authmsg" id="authMsg"></span>
+  <div class="authbar" id="authbar" hidden>
+    <span id="authWho"><i class="dot" id="authDot"></i><b id="authPhoneShown"></b></span>
+    <button class="ghost" id="authInBtn" type="button" hidden>Sign in</button>
+    <button class="ghost" id="authOutBtn" type="button">Sign out</button>
+    <button class="ghost" id="authPullBtn" type="button">Pull latest</button>
+    <span class="authmsg" id="authMsgBar"></span>
   </div>
 
   <nav class="tabs" aria-label="View">
@@ -729,21 +755,39 @@ function render(){
    an opaque session token kept under ssf-auth-v1. */
 (function(){
   const live=typeof fetch==="function"&&typeof location==="object"&&/^https?:$/.test(String(location.protocol||""));
-  let token="",phone="",pushT=null,lastPush="";
+  let token="",phone="",pushT=null,lastPush="",localOnly=false;
   try{const j=localStorage.getItem("ssf-auth-v1");if(j){const o=JSON.parse(j);token=String(o.token||"");phone=String(o.phone||"");}}catch(e){}
   const digits=p=>String(p||"").replace(/\D/g,"");
   const tstamp=()=>new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
-  function msg(t){const n=$("authMsg");if(n)n.textContent=t||"";}
+  function msg(t){const n=$("authMsg");if(n)n.textContent=t||"";}          /* the gate's own line */
+  function bar(t,kind){const n=$("authMsgBar");if(!n)return;
+    n.innerHTML=t||"";n.className="authmsg"+(kind?" "+kind:"");}             /* status once signed in */
+  /* body may not exist under _smoke_test.js's stub document — never touch it unguarded */
+  const B=(typeof document==="object"&&document.body)?document.body:null;
+  function lock(){if(B&&!localOnly)B.classList.add("locked");
+    const n=$("authPhone");if(n&&n.focus)try{n.focus();}catch(e){}}
+  function unlock(){if(B)B.classList.remove("locked");
+    const pin=$("authPin");if(pin)pin.value="";}
   function ui(){
-    const ab=$("authbar");
-    if(!ab)return;
-    if(!live){ab.innerHTML='<span style="color:var(--mut)">Cloud sign-in needs the app served by <b>node server.js</b> (http://localhost:8321). Opened like this, your shortlist saves in <b>this browser only</b>.</span>';return;}
+    if(!live){
+      /* opened from disk there is no API to talk to, so the gate must not lock
+         anyone out of the (still fully working) local tracker */
+      if(B)B.classList.remove("locked");
+      const ab=$("authbar");
+      if(ab){ab.hidden=false;
+        const who=$("authWho");if(who)who.hidden=true;
+        const out=$("authOutBtn");if(out)out.hidden=true;
+        const pu=$("authPullBtn");if(pu)pu.hidden=true;
+        bar('Cloud sign-in needs the app served over http (the deployed site, or <b>node server.js</b> at http://localhost:8321). Opened like this, your shortlist saves in <b>this browser only</b>.');}
+      return;
+    }
     const on=!!(token&&phone);
-    const form=$("authForm"),who=$("authWho"),out=$("authOutBtn"),pull=$("authPullBtn");
-    if(form)form.hidden=on;
-    if(who)who.hidden=!on;
-    if(out)out.hidden=!on;
-    if(pull)pull.hidden=!on;
+    if(on){if(B)B.classList.remove("locked");}else if(!localOnly&&B)B.classList.add("locked");
+    const ab=$("authbar");if(ab)ab.hidden=!(on||localOnly);
+    const inb=$("authInBtn");if(inb)inb.hidden=on;   /* the local-only way back to the gate */
+    const who=$("authWho");if(who)who.hidden=!on;
+    const out=$("authOutBtn");if(out)out.hidden=!on;
+    const pul=$("authPullBtn");if(pul)pul.hidden=!on;
     const ps=$("authPhoneShown");if(ps)ps.textContent=on?phone:"";
     const d=$("authDot");if(d)d.className=on&&lastPush?"dot":"dot off";
   }
@@ -755,17 +799,17 @@ function render(){
     return fetch(path,{method:method||"GET",headers:{"content-type":"application/json","x-auth-token":token},
         body:body?JSON.stringify(body):undefined})
       .then(r=>{
-        if(r.status===401){setAuth("","");msg("Session expired — sign in again.");return null;}
+        if(r.status===401){setAuth("","");lock();msg("Session expired — sign in again.");return null;}
         return r.ok?r.json():Promise.reject(new Error("HTTP "+r.status));
       })
-      .catch(()=>{msg("Server unreachable — changes stay in this browser.");return null;});
+      .catch(()=>{bar("Server unreachable — changes stay in this browser.","err");return null;});
   }
   function pushNow(){
     return api("/api/marks","PUT",{data:M}).then(r=>{if(r&&r.ok)lastPush=tstamp();ui();});
   }
   function pull(silent){
     return api("/api/marks","GET").then(r=>{
-      if(!r||!r.data){if(!silent)msg("No cloud list for this number yet — anything you tick now uploads automatically.");return;}
+      if(!r||!r.data){if(!silent)bar("No cloud list for this number yet — anything you tick now uploads automatically.");return;}
       const d=r.data;
       if(Array.isArray(d.ids))M.ids=d.ids;
       if(d.notes&&typeof d.notes==="object")M.notes=d.notes;
@@ -773,8 +817,8 @@ function render(){
       if(typeof d.recV==="number")M.recV=Math.max(M.recV,d.recV);
       /* write the local copy directly: a pull must not bounce straight back up */
       try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}
-      render();lastPush=tstamp();
-      if(!silent)msg("Cloud list loaded — "+M.ids.length+" items.");
+      render();lastPush=tstamp();ui();
+      if(!silent)bar("Cloud list loaded — "+M.ids.length+" items.","ok");
     });
   }
   function signIn(){
@@ -787,14 +831,17 @@ function render(){
       .then(r=>r.text().then(t=>{
         let j=null;try{j=JSON.parse(t);}catch(e){}
         if(!j){/* not our API — a static host (GitHub Pages) answered instead */
-          msg("This copy of the app has no sign-in server. Open it at http://localhost:8321 (run `node server.js`), not the GitHub Pages URL.");return;}
-        if(r.status!==200||!j.token){msg(j.error||"Could not sign in.");return;}
-        setAuth(j.token,j.phone);
-        msg(j.created?"Account created for this number — ticking a programme now saves it to the cloud.":"Welcome back.");
-        return pull(true);
+          msg("This copy of the app has no sign-in server. Use https://sommersemester-finder.sohagvhi1106.workers.dev, or run the local server.");return;}
+        if(r.status!==200||!j.token){msg(j.error||"Could not sign in.");unlockBack();return;}
+        localOnly=false;setAuth(j.token,j.phone);   /* ui() opens the gate */
+        return pull(true).then(()=>bar(j.created
+          ?"New account created — your ticks now save to the cloud."
+          :"Welcome back — cloud list loaded.","ok"));
       }))
-      .catch(()=>msg("Can't reach the sign-in server — is `node server.js` running, and are you on http://localhost:8321?"))
+      .catch(()=>{msg("Can't reach the sign-in server. Check your connection and try again.");unlockBack();})
       .then(()=>{if(btn)btn.disabled=false;});
+    /* leave the field ready for a retry; the gate stays shut */
+    function unlockBack(){const pin=$("authPin");if(pin)pin.value="";const n=$("authPhone");if(n&&n.focus)try{n.focus();}catch(e){}}
   }
   if(live){
     /* every edit schedules one upload ~1.2 s later, so typing a remark does not
@@ -802,11 +849,18 @@ function render(){
     queuePush=function(){if(!token)return;clearTimeout(pushT);pushT=setTimeout(pushNow,1200);};
     const b=$("authBtn");if(b)b.addEventListener("click",signIn);
     [$("authPhone"),$("authPin")].forEach(n=>{if(n)n.addEventListener("keydown",e=>{if(e.key==="Enter")signIn();});});
-    const o=$("authOutBtn");if(o)o.addEventListener("click",()=>{if(token)api("/api/logout","POST");setAuth("","");msg("Signed out. This browser keeps its local copy.");});
+    const gl=$("gateLocal");
+    if(gl)gl.addEventListener("click",()=>{localOnly=true;unlock();ui();
+      bar("Working in this browser only — nothing uploads until you sign in.");});
+    const ib=$("authInBtn");
+    if(ib)ib.addEventListener("click",()=>{localOnly=false;ui();lock();msg("");});
+    const o=$("authOutBtn");if(o)o.addEventListener("click",()=>{
+      if(token)api("/api/logout","POST");
+      localOnly=false;setAuth("","");msg("Signed out. This browser keeps its local copy.");});
     const pu=$("authPullBtn");if(pu)pu.addEventListener("click",()=>pull(false));
-    ui();
-    if(token)pull(true);
-  }else ui();
+  }
+  ui();
+  if(live&&token)pull(true);
 })();
 
 render();
