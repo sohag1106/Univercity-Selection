@@ -96,13 +96,41 @@ globalThis.__probe = () => {
   const seededNote = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["lue-ras"]) || ""; } catch (e) { return ""; } })();
   const seededNoteIts = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["lue-its"]) || ""; } catch (e) { return ""; } })();
   const seededNoteHarz = (() => { try { const o = JSON.parse(localStorage.getItem("ssf-marks-v1")); return (o && o.notes && o.notes["harz-tim"]) || ""; } catch (e) { return ""; } })();
+
+  // Will-apply visibility (2 Oct 2026): a status on a non-starred card used to
+  // be invisible everywhere. Heal orphans, auto-star on status set, untick clears.
+  const stBefore = M.ids.includes("kassel-aida");
+  M.status["kassel-aida"] = "planned";           // what the user did on the All tab
+  M.ids = M.ids.filter(x => x !== "kassel-aida"); // card itself was never starred
+  const healChanged = reconcileMarks();
+  const healWorked = M.ids.includes("kassel-aida");
+  M.status["ghost-uni"] = "planned";              // unknown id must stay out
+  reconcileMarks();
+  const ghostOut = !M.ids.includes("ghost-uni");
+  delete M.status["ghost-uni"];
+  M.ids = M.ids.filter(x => x !== "chem-ase");
+  delete M.status["chem-ase"];
+  setStatus("chem-ase", "applied");
+  const autoShort = M.ids.includes("chem-ase") && M.status["chem-ase"] === "applied";
+  S.tab = "short"; S.stFilter = "planned"; render();
+  const plannedHtml = document.getElementById("list").innerHTML;
+  const plannedShows = (plannedHtml.match(/<article /g) || []).length === 1 &&
+    plannedHtml.indexOf('data-id="kassel-aida"') !== -1;
+  toggleShortlist("kassel-aida");
+  const untickCleared = !M.ids.includes("kassel-aida") && !("kassel-aida" in M.status);
+  S.stFilter = "";
+  M.ids = M.ids.filter(x => x !== "chem-ase" && x !== "kassel-aida");
+  delete M.status["chem-ase"];
+  if (!stBefore) delete M.status["kassel-aida"];
+
   S.tab = "all"; render();
 
   return { n: P.length, dupes, V, orderNoSort, orderSort, moiRankTxt,
            nNoSort, nSort, nOnly, onlyBad, stats, hint, xssEscaped,
            dlLue: dl(P.find(p => p.id === "lue-ras")),
            shortCnt, nShort, shortMissing, recPersisted, seededNote,
-           seededNoteIts, seededNoteHarz };
+           seededNoteIts, seededNoteHarz,
+           healChanged, healWorked, ghostOut, autoShort, plannedShows, untickCleared };
 };
 `, ctx);
 
@@ -187,6 +215,14 @@ ok(r.seededNoteIts.includes("12 CP security") && r.seededNoteIts.includes("15 Oc
    "Lübeck IT-Security remark pre-filled (gates + window)", r.seededNoteIts);
 ok(r.seededNoteHarz.includes("15 Dec 2026") && r.seededNoteHarz.includes("professional experience"),
    "Harz TIM remark pre-filled (deadline + experience check)", r.seededNoteHarz);
+
+console.log("\n[will-apply visibility]");
+ok(r.healChanged === true, "reconcileMarks reports a change for an orphaned status");
+ok(r.healWorked === true, "orphan status (kassel-aida) pulled onto the shortlist");
+ok(r.ghostOut === true, "status for an unknown id does not enter the shortlist");
+ok(r.autoShort === true, "setting a status auto-shorts the card");
+ok(r.plannedShows === true, "Will-apply filter on the short tab lists Kassel AIDA");
+ok(r.untickCleared === true, "unticking clears the status (no resurrection on reload)");
 
 console.log("\n[safety]");
 ok(r.xssEscaped === true, "hostile remark renders escaped");

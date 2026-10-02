@@ -22,4 +22,5 @@ package-lock.json
 public/
 _responsive_check.js
 _gate_login_check.js
+_willapply_check.js
 resp_*.png

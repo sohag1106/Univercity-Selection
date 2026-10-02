@@ -526,6 +526,31 @@ if(M.recV<REC_V){
   Object.keys(REC_NOTES).forEach(id=>{if(!(id in M.notes))M.notes[id]=REC_NOTES[id];});
   M.recV=REC_V;saveMarks();
 }
+/* Status (Will apply / Applied …) is only visible on the shortlist tab, whose
+   list AND counts come from M.ids — so a status on a non-shortlisted id was
+   invisible everywhere (kassel-aida, chem-ase, hi-da were stranded this way).
+   Keep the pair in step: a status implies a shortlist slot, unstarring clears
+   the status, and reconcile heals old cloud/local rows that already drifted. */
+function reconcileMarks(){
+  let ch=false;
+  Object.keys(M.status).forEach(id=>{
+    if(!M.status[id]){delete M.status[id];ch=true;return;}
+    if(P.some(p=>p.id===id)&&!M.ids.includes(id)){M.ids.push(id);ch=true;}
+  });
+  return ch;
+}
+if(reconcileMarks())saveMarks();
+function setStatus(id,v){
+  if(v){M.status[id]=v;
+    if(!M.ids.includes(id)&&P.some(p=>p.id===id))M.ids.push(id);
+  }else delete M.status[id];
+  saveMarks();render();
+}
+function toggleShortlist(id){
+  if(M.ids.includes(id)){M.ids=M.ids.filter(x=>x!==id);delete M.status[id];}
+  else M.ids.push(id);
+  saveMarks();render();
+}
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -549,15 +574,11 @@ $("tabShort").addEventListener("click",()=>{S.tab="short";render();});
 $("meta").addEventListener("click",e=>{const b=e.target.closest(".stf");if(!b)return;S.stFilter=b.dataset.f;render();});
 $("list").addEventListener("click",e=>{
   const b=e.target.closest(".tick");if(!b)return;
-  const id=b.dataset.id;
-  if(M.ids.includes(id))M.ids=M.ids.filter(x=>x!==id);else M.ids.push(id);
-  saveMarks();render();
+  toggleShortlist(b.dataset.id);
 });
 $("list").addEventListener("change",e=>{
   const s=e.target.closest&&e.target.closest(".astat");if(!s)return;
-  const id=s.dataset.id;
-  if(s.value)M.status[id]=s.value;else delete M.status[id];
-  saveMarks();render();
+  setStatus(s.dataset.id,s.value);
 });
 $("list").addEventListener("input",e=>{
   const t=e.target;
@@ -815,9 +836,13 @@ function render(){
       if(d.notes&&typeof d.notes==="object")M.notes=d.notes;
       if(d.status&&typeof d.status==="object")M.status=d.status;
       if(typeof d.recV==="number")M.recV=Math.max(M.recV,d.recV);
-      /* write the local copy directly: a pull must not bounce straight back up */
+      /* heal orphaned statuses (status without a shortlist slot), then write the
+         local copy directly: a pull must not bounce straight back up — only the
+         healed copy does, and only when healing actually changed something */
+      const fixed=reconcileMarks();
       try{localStorage.setItem("ssf-marks-v1",JSON.stringify(M));}catch(e){}
       render();lastPush=tstamp();ui();
+      if(fixed)queuePush();
       if(!silent)bar("Cloud list loaded — "+M.ids.length+" items.","ok");
     });
   }
